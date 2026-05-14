@@ -65,7 +65,7 @@ export function CoachesPage() {
           >
             Todas las Especialidades
           </button>
-          {specialties.map((specialty) => (
+          {specialties.map((specialty: string) => (
             <button
               key={specialty}
               onClick={() => setSelectedSpecialty(specialty)}

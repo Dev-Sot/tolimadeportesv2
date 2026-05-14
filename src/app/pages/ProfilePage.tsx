@@ -357,7 +357,7 @@ export function ProfilePage() {
                             className="w-full px-3 py-2 border border-input rounded-lg bg-input-background text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
                         ) : (
                           <p className="text-sm text-muted-foreground px-3 py-2 bg-secondary/30 rounded-lg">
-                            {(user as any)?.[key] || <span className="italic">No especificado</span>}
+                            {((user as any)?.[key]) || <span className="italic">No especificado</span>}
                           </p>
                         )}
                       </div>

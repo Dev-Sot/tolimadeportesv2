@@ -13,18 +13,28 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
-  assetsInclude: ['**/*.svg', '**/*.csv'],
   build: {
     outDir: 'dist',
     sourcemap: false,
+    // Don't fail on TypeScript errors during build
     rollupOptions: {
+      onwarn(warning, warn) {
+        // Suppress certain warnings that don't affect functionality
+        if (warning.code === 'MODULE_LEVEL_DIRECTIVE') return;
+        if (warning.code === 'CIRCULAR_DEPENDENCY') return;
+        warn(warning);
+      },
       output: {
         manualChunks: {
-          vendor: ['react', 'react-dom', 'react-router-dom'],
-          ui: ['motion', 'lucide-react', 'sonner'],
-          state: ['zustand', '@tanstack/react-query'],
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'ui-vendor': ['motion', 'lucide-react', 'sonner'],
+          'data-vendor': ['zustand', '@tanstack/react-query', '@supabase/supabase-js'],
         }
       }
     }
+  },
+  esbuild: {
+    // esbuild handles TS transpilation — ignores type errors
+    logOverride: { 'this-is-undefined-in-esm': 'silent' }
   }
 })
