@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { Plus, MapPin, Edit3, X, Star, Clock , ArrowLeft } from 'lucide-react';
+import { Plus, MapPin, Edit3, X, Star, Clock, ArrowLeft } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { Card } from '../components/ui/Card';
-import { useMyCourts, useCreateCourt } from '../hooks/useSupabase';
-import { formatCurrency, formatRelativeTime } from '../lib/utils';
+import { useMyCourts, useCreateCourt, useUpdateCourt } from '../hooks/useSupabase';
+import { formatCurrency } from '../lib/utils';
 import { toast } from 'sonner';
 
 const SPORTS = ['Fútbol','Tenis','Baloncesto','Voleibol','Pádel','Squash'];
@@ -16,49 +16,90 @@ const EMPTY = { name:'', description:'', sport:'Fútbol', address:'', city:'Ibag
 export function CourtOwnerDashboardPage() {
   const { data: courts = [], isLoading } = useMyCourts();
   const createCourt = useCreateCourt();
+  const updateCourt = useUpdateCourt();
+
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState(EMPTY);
+  const [editId, setEditId]     = useState<string | null>(null);
+  const [form, setForm]         = useState(EMPTY);
 
   const f = (k: string, v: any) => setForm(p => ({...p, [k]: v}));
   const toggleAmenity = (a: string) => f('amenities', form.amenities.includes(a) ? form.amenities.filter(x => x !== a) : [...form.amenities, a]);
 
+  function openCreate() {
+    setForm(EMPTY);
+    setEditId(null);
+    setShowForm(true);
+  }
+
+  function openEdit(c: any) {
+    setForm({
+      name:           c.name,
+      description:    c.description ?? '',
+      sport:          c.sport,
+      address:        c.address,
+      city:           c.city,
+      price_per_hour: String(c.price_per_hour),
+      images:         (c.images ?? []).join('\n'),
+      amenities:      c.amenities ?? [],
+    });
+    setEditId(c.id);
+    setShowForm(true);
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!form.name || !form.address || !form.price_per_hour) { toast.error('Completa los campos obligatorios'); return; }
-    try {
-    await createCourt.mutateAsync({
-      name: form.name, description: form.description, sport: form.sport,
-      address: form.address, city: form.city,
+
+    const payload = {
+      name:          form.name,
+      description:   form.description,
+      sport:         form.sport,
+      address:       form.address,
+      city:          form.city,
       price_per_hour: parseFloat(form.price_per_hour),
-      amenities: form.amenities,
-      images: form.images.split('\n').map(s => s.trim()).filter(Boolean),
-    });
-    setShowForm(false); setForm(EMPTY);
-    } catch (err: any) { console.error(err?.message); }
+      amenities:     form.amenities,
+      images:        form.images.split('\n').map(s => s.trim()).filter(Boolean),
+    };
+
+    try {
+      if (editId) {
+        await updateCourt.mutateAsync({ id: editId, ...payload });
+      } else {
+        await createCourt.mutateAsync(payload);
+      }
+      setShowForm(false);
+      setForm(EMPTY);
+      setEditId(null);
+    } catch (err: any) {
+      console.error(err?.message);
+    }
   }
+
+  const isPending = createCourt.isPending || updateCourt.isPending;
 
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex items-center justify-between mb-8">
           <div>
-                      <Link to="/dashboard" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors">
-            <ArrowLeft className="w-4 h-4" /> Volver
-          </Link>
-          <h1 className="text-3xl font-bold">Mis Canchas</h1>
+            <Link to="/dashboard" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors">
+              <ArrowLeft className="w-4 h-4" /> Volver
+            </Link>
+            <h1 className="text-3xl font-bold">Mis Canchas</h1>
             <p className="text-muted-foreground mt-1">Gestiona tus instalaciones deportivas</p>
           </div>
-          <Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> Nueva cancha</Button>
+          <Button onClick={openCreate}><Plus className="w-4 h-4" /> Nueva cancha</Button>
         </div>
 
         <AnimatePresence>
           {showForm && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+              className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+              onClick={(e) => { if (e.target === e.currentTarget) setShowForm(false); }}>
               <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }}
                 className="bg-card rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6">
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-bold">Registrar Cancha</h2>
+                  <h2 className="text-xl font-bold">{editId ? 'Editar Cancha' : 'Registrar Cancha'}</h2>
                   <button onClick={() => setShowForm(false)} className="p-2 rounded-lg hover:bg-secondary"><X className="w-5 h-5" /></button>
                 </div>
                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -114,7 +155,11 @@ export function CourtOwnerDashboardPage() {
                   </div>
                   <div className="flex gap-3 pt-2">
                     <Button type="button" variant="outline" onClick={() => setShowForm(false)}>Cancelar</Button>
-                    <Button type="submit" fullWidth loading={createCourt.isPending}>Publicar cancha</Button>
+                    <Button type="submit" fullWidth loading={isPending} disabled={isPending}>
+                      {isPending
+                        ? (editId ? 'Guardando...' : 'Publicando...')
+                        : (editId ? 'Guardar cambios' : 'Publicar cancha')}
+                    </Button>
                   </div>
                 </form>
               </motion.div>
@@ -129,31 +174,43 @@ export function CourtOwnerDashboardPage() {
             <MapPin className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
             <h3 className="text-xl font-semibold mb-2">Aún no tienes canchas</h3>
             <p className="text-muted-foreground mb-6">Registra tu primera cancha y recibe reservas digitales</p>
-            <Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> Registrar cancha</Button>
+            <Button onClick={openCreate}><Plus className="w-4 h-4" /> Registrar cancha</Button>
           </div>
         ) : (
           <div className="space-y-3">
             {courts.map((c: any) => (
-              <Card key={c.id} className="p-5">
-                <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-xl bg-secondary overflow-hidden flex-shrink-0">
-                    {c.images?.[0] ? <img src={c.images[0]} alt={c.name} className="w-full h-full object-cover" /> : <MapPin className="w-5 h-5 m-auto mt-4 text-muted-foreground" />}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <p className="font-semibold">{c.name}</p>
-                      <Badge variant="outline" size="sm">{c.sport}</Badge>
+              <motion.div key={c.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+                <Card className="p-5">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-xl bg-secondary overflow-hidden shrink-0 flex items-center justify-center">
+                      {c.images?.[0]
+                        ? <img src={c.images[0]} alt={c.name} className="w-full h-full object-cover" />
+                        : <MapPin className="w-5 h-5 text-muted-foreground" />}
                     </div>
-                    <div className="flex gap-3 text-sm text-muted-foreground flex-wrap">
-                      <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{c.city}</span>
-                      <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{formatCurrency(c.price_per_hour)}/hora</span>
-                      <span className="flex items-center gap-1"><Star className="w-3 h-3" />{c.rating ?? 0} ({c.review_count ?? 0})</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <p className="font-semibold">{c.name}</p>
+                        <Badge variant="outline" size="sm">{c.sport}</Badge>
+                      </div>
+                      <div className="flex gap-3 text-sm text-muted-foreground flex-wrap">
+                        <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{c.city}</span>
+                        <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{formatCurrency(c.price_per_hour)}/hora</span>
+                        <span className="flex items-center gap-1"><Star className="w-3 h-3" />{c.rating ?? 0} ({c.review_count ?? 0})</span>
+                      </div>
                     </div>
+                    <button
+                      onClick={() => openEdit(c)}
+                      className="p-2 rounded-lg hover:bg-secondary transition-colors shrink-0"
+                      title="Editar cancha"
+                    >
+                      <Edit3 className="w-4 h-4 text-muted-foreground" />
+                    </button>
                   </div>
-                </div>
-              </Card>
+                </Card>
+              </motion.div>
             ))}
           </div>
+
         )}
       </div>
     </div>

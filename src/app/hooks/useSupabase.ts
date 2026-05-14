@@ -267,6 +267,24 @@ export function useCreateCourt() {
   });
 }
 
+export function useUpdateCourt() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: any) => {
+      const { data, error } = await supabase.from('courts')
+        .update(updates).eq('id', id).select().single();
+      if (error) throw new Error(error.message);
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['courts'] });
+      qc.invalidateQueries({ queryKey: ['my_courts'] });
+      toast.success('Cancha actualizada');
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
 export function useMyCourts() {
   return useQuery({
     queryKey: ['my_courts'],
