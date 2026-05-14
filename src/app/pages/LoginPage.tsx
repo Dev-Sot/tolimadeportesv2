@@ -86,10 +86,19 @@ export function LoginPage() {
             <motion.div
               initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
-              className="flex items-center gap-2 p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm mb-5"
+              className="p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-sm mb-5"
             >
-              <AlertCircle className="w-4 h-4 flex-shrink-0" />
-              {error}
+              <div className="flex items-start gap-2 text-destructive">
+                <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p>{error}</p>
+                  {error.includes('confirmar') && (
+                    <p className="text-xs mt-1 text-muted-foreground">
+                      Si no recibiste el email, contacta al administrador o intenta con otra cuenta.
+                    </p>
+                  )}
+                </div>
+              </div>
             </motion.div>
           )}
 

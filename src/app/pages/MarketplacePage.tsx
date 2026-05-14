@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Search, SlidersHorizontal, X, Grid3x3, List } from 'lucide-react';
 import { Input } from '../components/ui/Input';
@@ -7,7 +8,6 @@ import { Badge } from '../components/ui/Badge';
 import { Card } from '../components/ui/Card';
 import { ProductCard } from '../components/marketplace/ProductCard';
 import { useProducts } from '../hooks/useSupabase';
-import { mockProducts } from '../lib/mockData';
 const categories = ['Fútbol','Tenis','Baloncesto','Gimnasio','Natación','Ciclismo','Running'];
 
 export function MarketplacePage() {
@@ -18,7 +18,7 @@ export function MarketplacePage() {
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
-  const { data: rawProducts = [], isLoading } = useProducts({
+  const { data: filteredProducts = [], isLoading } = useProducts({
     category: selectedCategory || undefined,
     search: searchQuery || undefined,
     minPrice: priceRange[0] > 0 ? priceRange[0] : undefined,
@@ -196,10 +196,24 @@ export function MarketplacePage() {
             </div>
 
             {filteredProducts.length === 0 ? (
-              <Card className="text-center py-12">
-                <p className="text-muted-foreground mb-4">No se encontraron productos</p>
-                <Button onClick={clearFilters}>Limpiar filtros</Button>
-              </Card>
+              <div className="col-span-full flex flex-col items-center justify-center py-20 text-center">
+                <div className="w-20 h-20 rounded-full bg-secondary/50 flex items-center justify-center mb-4">
+                  <Store className="w-10 h-10 text-muted-foreground" />
+                </div>
+                {searchQuery || selectedCategory ? (
+                  <>
+                    <h3 className="text-lg font-semibold mb-2">No se encontraron productos</h3>
+                    <p className="text-muted-foreground mb-4">Intenta con otros filtros de búsqueda</p>
+                    <Button onClick={clearFilters}>Limpiar filtros</Button>
+                  </>
+                ) : (
+                  <>
+                    <h3 className="text-lg font-semibold mb-2">Aún no hay productos</h3>
+                    <p className="text-muted-foreground mb-4">Sé el primero en publicar productos deportivos en Tolima Deportes</p>
+                    <Link to="/register"><Button>Registrarme como vendedor</Button></Link>
+                  </>
+                )}
+              </div>
             ) : (
               <div
                 className={

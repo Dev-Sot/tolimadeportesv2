@@ -7,7 +7,6 @@ import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { Card } from '../components/ui/Card';
 import { useCoaches } from '../hooks/useSupabase';
-import { mockCoaches } from '../lib/mockData';
 import { formatCurrency } from '../lib/utils';
 
 export function CoachesPage() {
@@ -16,12 +15,11 @@ export function CoachesPage() {
 
   const specialties = ['Fútbol', 'Tenis', 'Gimnasio', 'Baloncesto', 'Natación'];
 
-  const { data: rawCoaches = [], isLoading } = useCoaches({
+  const { data: filteredCoaches = [], isLoading } = useCoaches({
     specialty: selectedSpecialty || undefined,
     search: searchQuery || undefined,
   });
 
-  const filteredCoaches = rawCoaches.length > 0 ? rawCoaches : mockCoaches;
 
   return (
     <div className="min-h-screen bg-background">

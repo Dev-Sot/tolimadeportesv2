@@ -14,7 +14,6 @@ import {
 import { Button } from '../components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
-import { mockProducts } from '../lib/mockData';
 import { formatCurrency } from '../lib/utils';
 
 export function LandingPage() {

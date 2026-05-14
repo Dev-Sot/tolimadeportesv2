@@ -7,7 +7,6 @@ import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { Card } from '../components/ui/Card';
 import { useCourts } from '../hooks/useSupabase';
-import { mockCourts } from '../lib/mockData';
 import { formatCurrency } from '../lib/utils';
 
 export function CourtsPage() {
@@ -16,12 +15,11 @@ export function CourtsPage() {
 
   const sports = ['Fútbol', 'Tenis', 'Baloncesto', 'Voleibol', 'Paddle'];
 
-  const { data: rawCourts = [], isLoading } = useCourts({
+  const { data: filteredCourts = [], isLoading } = useCourts({
     sport: selectedSport || undefined,
     search: searchQuery || undefined,
   });
 
-  const filteredCourts = rawCourts.length > 0 ? rawCourts : mockCourts;
 
   return (
     <div className="min-h-screen bg-background">

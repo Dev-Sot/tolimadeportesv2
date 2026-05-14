@@ -7,7 +7,6 @@ import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { Card } from '../components/ui/Card';
 import { useTournaments } from '../hooks/useSupabase';
-import { mockTournaments } from '../lib/mockData';
 import { formatCurrency, formatDate } from '../lib/utils';
 
 export function TournamentsPage() {
@@ -22,14 +21,12 @@ export function TournamentsPage() {
     { value: 'completed', label: 'Finalizados' },
   ];
 
-  const { data: rawTournaments = [], isLoading } = useTournaments({
+  const { data: filteredTournaments = [], isLoading } = useTournaments({
     sport: selectedSport || undefined,
     status: selectedStatus || undefined,
     search: searchQuery || undefined,
   });
 
-  // Fall back to mock data while Supabase is loading or not yet populated
-  const filteredTournaments = rawTournaments.length > 0 ? rawTournaments : mockTournaments;
 
   const getStatusBadge = (status: string) => {
     switch (status) {

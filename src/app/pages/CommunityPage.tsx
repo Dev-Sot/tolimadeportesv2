@@ -5,7 +5,6 @@ import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { usePosts, useCreatePost, useToggleLike } from '../hooks/useSupabase';
-import { mockPosts } from '../lib/mockData';
 import { useAuthStore } from '../stores/authStore';
 import { formatRelativeTime } from '../lib/utils';
 import { toast } from 'sonner';
@@ -22,8 +21,7 @@ const TRENDING = [
 
 export function CommunityPage() {
   const { user, isAuthenticated } = useAuthStore();
-  const { data: rawPosts = [], isLoading } = usePosts();
-  const posts = rawPosts.length > 0 ? rawPosts : mockPosts.map((p: any) => ({ ...p, profiles: { name: p.user?.name ?? 'Usuario', avatar: p.user?.avatar, role: p.user?.role }, created_at: p.created_at ?? p.createdAt ?? new Date().toISOString() }));
+  const { data: posts = [], isLoading } = usePosts();
   const createPost = useCreatePost();
   const toggleLike = useToggleLike();
 
