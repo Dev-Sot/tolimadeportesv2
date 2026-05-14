@@ -44,14 +44,13 @@ export function Navbar() {
             {/* Logo */}
             <Link
               to="/marketplace"
-              className="flex items-center gap-2 shrink-0"
+              className="flex items-center gap-2.5 shrink-0"
               aria-label="Tolima Deportes — Ir al inicio"
             >
-              <img
-                src="/logo.png"
-                alt="Tolima Deportes"
-                className="h-10 w-auto object-contain"
-              />
+              <div className="w-9 h-9 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center">
+                <Trophy className="w-5 h-5 text-white" aria-hidden="true" />
+              </div>
+              <span className="font-bold text-lg hidden sm:block">Tolima Deportes</span>
             </Link>
 
             {/* Desktop nav */}

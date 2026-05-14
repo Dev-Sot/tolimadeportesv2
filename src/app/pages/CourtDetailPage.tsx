@@ -133,7 +133,7 @@ export function CourtDetailPage() {
               <Card>
                 <CardHeader><CardTitle>Horario disponible</CardTitle></CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-7 gap-2">
+                  <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
                     {availability.map((av: any) => (
                       <div key={av.id} className="text-center">
                         <div className="text-xs font-medium text-muted-foreground mb-1">{DAY_NAMES[av.day_of_week]}</div>

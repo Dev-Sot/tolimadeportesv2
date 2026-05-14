@@ -92,7 +92,7 @@ export function DashboardPage() {
         {/* Role-specific CTA for vendors/organizers */}
         {(role === 'vendor' || role === 'organizer' || role === 'court_owner') && (
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-            className="mb-8 p-5 bg-primary/5 border border-primary/20 rounded-2xl flex items-center justify-between gap-4">
+            className="mb-8 p-5 bg-primary/5 border border-primary/20 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
               <p className="font-semibold">
                 {role === 'vendor' ? '¿Listo para vender?' : role === 'organizer' ? '¿Listo para organizar?' : '¿Listo para recibir reservas?'}
@@ -103,7 +103,7 @@ export function DashboardPage() {
                  'Registra tus canchas y empieza a recibir reservas digitales hoy'}
               </p>
             </div>
-            <Link to={role === 'vendor' ? '/vendor' : role === 'organizer' ? '/organizer' : '/court-owner'} className="flex-shrink-0">
+            <Link to={role === 'vendor' ? '/vendor' : role === 'organizer' ? '/organizer' : '/court-owner'} className="shrink-0 w-full sm:w-auto">
               <Button>
                 {role === 'vendor' ? 'Gestionar productos' : role === 'organizer' ? 'Gestionar torneos' : 'Gestionar canchas'}
               </Button>

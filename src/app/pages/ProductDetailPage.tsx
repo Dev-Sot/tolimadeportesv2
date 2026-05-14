@@ -80,7 +80,7 @@ export function ProductDetailPage() {
               <img
                 src={product.images[selectedImage]}
                 alt={product.name}
-                className="w-full h-[500px] object-cover"
+                className="w-full h-[240px] sm:h-[380px] md:h-[500px] object-cover"
               />
               {product.featured && (
                 <Badge variant="accent" className="absolute top-4 left-4">
@@ -120,7 +120,7 @@ export function ProductDetailPage() {
               <Badge variant="outline" className="mb-3">
                 {product.category}
               </Badge>
-              <h1 className="text-4xl font-bold mb-4">{product.name}</h1>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4">{product.name}</h1>
               <div className="flex items-center gap-4 mb-4">
                 <div className="flex items-center gap-1">
                   {[...Array(5)].map((_, i) => (
@@ -157,7 +157,7 @@ export function ProductDetailPage() {
             </div>
 
             <div className="mb-6">
-              <div className="text-4xl font-bold text-primary mb-2">
+              <div className="text-3xl sm:text-4xl font-bold text-primary mb-2">
                 {formatCurrency(product.price)}
               </div>
               {product.stock > 0 ? (
@@ -210,7 +210,7 @@ export function ProductDetailPage() {
               </div>
             </div>
 
-            <div className="flex gap-3 mb-8">
+            <div className="flex flex-col sm:flex-row gap-3 mb-8">
               <Button
                 onClick={handleAddToCart}
                 variant="outline"

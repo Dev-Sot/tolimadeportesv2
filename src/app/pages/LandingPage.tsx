@@ -80,7 +80,7 @@ export function LandingPage() {
               <Badge variant="primary" className="mb-4">
                 Plataforma #1 en Tolima
               </Badge>
-              <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-6 bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
+              <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-6 bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
                 Tu Comunidad Deportiva en Tolima
               </h1>
               <p className="text-xl text-muted-foreground mb-8 leading-relaxed">
