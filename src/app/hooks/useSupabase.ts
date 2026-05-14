@@ -115,24 +115,31 @@ export function useCreateProduct() {
 
       console.log('Inserting:', JSON.stringify(insert));
 
-      const { data, error } = await supabase
-        .from('products')
-        .insert(insert)
-        .select()
-        .single();
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 20000);
+      try {
+        const { data, error } = await supabase
+          .from('products')
+          .insert(insert)
+          .select()
+          .abortSignal(controller.signal)
+          .single();
 
-      if (error) {
-        console.error('INSERT ERROR:', JSON.stringify(error));
-        throw new Error(
-          error.code === '42501' ? 'Sin permisos: verifica que corriste fix_definitivo.sql en Supabase' :
-          error.code === '23503' ? 'Tu perfil no existe en la base de datos. Cierra sesión y vuelve a entrar.' :
-          error.code === '23505' ? 'Producto duplicado' :
-          `Error ${error.code}: ${error.message}`
-        );
+        if (error) {
+          console.error('INSERT ERROR:', JSON.stringify(error));
+          throw new Error(
+            error.code === '42501' ? 'Sin permisos: verifica que corriste fix_definitivo.sql en Supabase' :
+            error.code === '23503' ? 'Tu perfil no existe en la base de datos. Cierra sesión y vuelve a entrar.' :
+            error.code === '23505' ? 'Producto duplicado' :
+            `Error ${error.code}: ${error.message}`
+          );
+        }
+
+        console.log('INSERT OK:', data);
+        return data;
+      } finally {
+        clearTimeout(timer);
       }
-
-      console.log('INSERT OK:', data);
-      return data;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['products'] });
@@ -150,10 +157,16 @@ export function useUpdateProduct() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, ...updates }: any) => {
-      const { data, error } = await supabase.from('products')
-        .update(updates).eq('id', id).select().single();
-      if (error) throw new Error(error.message);
-      return data;
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 20000);
+      try {
+        const { data, error } = await supabase.from('products')
+          .update(updates).eq('id', id).abortSignal(controller.signal).select().single();
+        if (error) throw new Error(error.message);
+        return data;
+      } finally {
+        clearTimeout(timer);
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['products'] });
@@ -271,10 +284,16 @@ export function useUpdateCourt() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, ...updates }: any) => {
-      const { data, error } = await supabase.from('courts')
-        .update(updates).eq('id', id).select().single();
-      if (error) throw new Error(error.message);
-      return data;
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 20000);
+      try {
+        const { data, error } = await supabase.from('courts')
+          .update(updates).eq('id', id).abortSignal(controller.signal).select().single();
+        if (error) throw new Error(error.message);
+        return data;
+      } finally {
+        clearTimeout(timer);
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['courts'] });

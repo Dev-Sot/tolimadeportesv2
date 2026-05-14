@@ -15,6 +15,7 @@ import { Button } from '../components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { formatCurrency } from '../lib/utils';
+import { mockProducts } from '../lib/mockData';
 
 export function LandingPage() {
   const features = [
