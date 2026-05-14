@@ -58,7 +58,7 @@ function Layout({ children, noFooter }: { children: ReactNode; noFooter?: boolea
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      <main className="flex-1">{children}</main>
+      <main id="main-content" className="flex-1">{children}</main>
       {!noFooter && <Footer />}
       <Toaster position="top-right" richColors closeButton />
     </div>

@@ -2,20 +2,41 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" href="/logo.png" />
+    <link rel="apple-touch-icon" href="/logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#7c1e2c" />
     <meta name="description" content="Tolima Deportes - La plataforma deportiva más completa de Tolima. Compra equipamiento, reserva canchas, participa en torneos y conecta con la comunidad." />
     <meta name="keywords" content="deportes, Tolima, Ibagué, canchas, torneos, marketplace deportivo, entrenadores" />
     <meta property="og:title" content="Tolima Deportes - Tu Comunidad Deportiva" />
     <meta property="og:description" content="La plataforma deportiva más completa de Tolima. Marketplace, canchas, torneos y más." />
+    <meta property="og:image" content="/logo.png" />
     <meta property="og:type" content="website" />
     <title>Tolima Deportes - Tu Comunidad Deportiva en Tolima</title>
     <style>
       html, body { height: 100%; margin: 0; }
       #root { height: 100%; }
+      /* Skip navigation link for accessibility */
+      .skip-nav {
+        position: absolute;
+        top: -100%;
+        left: 0;
+        background: #7c1e2c;
+        color: #fff;
+        padding: 0.5rem 1rem;
+        font-weight: bold;
+        z-index: 9999;
+        text-decoration: none;
+        border-radius: 0 0 8px 0;
+        transition: top 0.2s;
+      }
+      .skip-nav:focus {
+        top: 0;
+      }
     </style>
   </head>
   <body>
+    <a href="#main-content" class="skip-nav">Saltar al contenido principal</a>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
