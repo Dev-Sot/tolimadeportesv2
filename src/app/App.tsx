@@ -67,7 +67,19 @@ function Layout({ children, noFooter }: { children: ReactNode; noFooter?: boolea
 
 export default function App() {
   const loadSession = useAuthStore((s) => s.loadSession);
-  useEffect(() => { loadSession(); }, [loadSession]);
+  const logout = useAuthStore((s) => s.logout);
+
+  useEffect(() => {
+    // Clear old auth storage key if it exists (migration from old key)
+    const oldKey = localStorage.getItem('tolima-auth');
+    const newKey = localStorage.getItem('tolima-auth-v2');
+    if (oldKey && !newKey) {
+      // Migrate: copy old auth to new key
+      localStorage.setItem('tolima-auth-v2', oldKey);
+      localStorage.removeItem('tolima-auth');
+    }
+    loadSession();
+  }, [loadSession]);
 
   return (
     <ErrorBoundary>

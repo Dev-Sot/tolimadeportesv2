@@ -19,7 +19,7 @@ function mapProfile(p: any): User {
     id: p.id,
     email: p.email,
     name: p.name ?? p.email?.split('@')[0] ?? 'Usuario',
-    role: p.role ?? 'customer',
+    role: (p.role as UserRole) ?? 'customer',
     avatar: p.avatar ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.email}`,
     bio: p.bio ?? '',
     phone: p.phone ?? '',
@@ -28,18 +28,16 @@ function mapProfile(p: any): User {
   };
 }
 
-function mapAuthUser(authUser: any): User {
-  const meta = authUser.user_metadata ?? {};
+function mapAuthUser(u: any): User {
+  const meta = u.user_metadata ?? {};
   return {
-    id: authUser.id,
-    email: authUser.email ?? '',
-    name: meta.name ?? meta.full_name ?? authUser.email?.split('@')[0] ?? 'Usuario',
+    id: u.id,
+    email: u.email ?? '',
+    name: meta.name ?? meta.full_name ?? u.email?.split('@')[0] ?? 'Usuario',
     role: (meta.role as UserRole) ?? 'customer',
-    avatar: meta.avatar_url ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=${authUser.email}`,
-    bio: '',
-    phone: '',
-    location: 'Ibagué, Tolima',
-    createdAt: authUser.created_at ?? new Date().toISOString(),
+    avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.email}`,
+    bio: '', phone: '', location: 'Ibagué, Tolima',
+    createdAt: u.created_at ?? new Date().toISOString(),
   };
 }
 
@@ -54,17 +52,14 @@ export const useAuthStore = create<AuthState>()(
         try {
           const { data: { session } } = await supabase.auth.getSession();
           if (!session?.user) return;
-
-          // Try to get profile, but fall back to auth user data
           const { data: profile } = await supabase
             .from('profiles').select('*').eq('id', session.user.id).maybeSingle();
-
           set({
             user: profile ? mapProfile(profile) : mapAuthUser(session.user),
             isAuthenticated: true,
           });
         } catch (e) {
-          console.error('loadSession error:', e);
+          console.error('loadSession:', e);
         }
       },
 
@@ -72,28 +67,21 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true });
         try {
           const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-
           if (error) {
-            // Show the real error from Supabase
-            if (error.message.includes('Email not confirmed')) {
-              throw new Error('Debes confirmar tu email antes de iniciar sesión. Revisa tu bandeja de entrada.');
-            }
-            if (error.message.includes('Invalid login credentials')) {
+            if (error.message.includes('Email not confirmed'))
+              throw new Error('Debes confirmar tu email. Revisa tu bandeja de entrada.');
+            if (error.message.includes('Invalid login credentials'))
               throw new Error('Email o contraseña incorrectos.');
-            }
             throw new Error(error.message);
           }
-
           if (!data.user) throw new Error('No se pudo iniciar sesión.');
 
-          // Get profile — use maybeSingle() to not throw if not found
           const { data: profile } = await supabase
             .from('profiles').select('*').eq('id', data.user.id).maybeSingle();
 
-          set({
-            user: profile ? mapProfile(profile) : mapAuthUser(data.user),
-            isAuthenticated: true,
-          });
+          const user = profile ? mapProfile(profile) : mapAuthUser(data.user);
+          console.log('Login OK, user:', user.id, user.email);
+          set({ user, isAuthenticated: true });
         } finally {
           set({ isLoading: false });
         }
@@ -103,34 +91,17 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true });
         try {
           const { data, error } = await supabase.auth.signUp({
-            email,
-            password,
-            options: { data: { name, role } },
+            email, password, options: { data: { name, role } },
           });
-
           if (error) throw new Error(error.message);
           if (!data.user) throw new Error('No se pudo crear la cuenta.');
 
-          // If email confirmation required, user.identities will be empty
-          if (data.user.identities?.length === 0) {
-            throw new Error('Este email ya está registrado. Intenta iniciar sesión.');
-          }
-
-          // Upsert profile — always set role explicitly
-          const { error: profileError } = await supabase.from('profiles').upsert({
-            id: data.user.id,
-            email,
-            name,
-            role,
+          // Upsert profile
+          await supabase.from('profiles').upsert({
+            id: data.user.id, email, name, role,
             location: 'Ibagué, Tolima',
             avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
           }, { onConflict: 'id' });
-
-          if (profileError) {
-            console.error('Profile upsert error:', profileError.message);
-          }
 
           const { data: profile } = await supabase
             .from('profiles').select('*').eq('id', data.user.id).maybeSingle();
@@ -151,18 +122,17 @@ export const useAuthStore = create<AuthState>()(
 
       updateProfile: (updates) => {
         const current = get().user;
-        if (!current) return;
-        set({ user: { ...current, ...updates } });
+        if (current) set({ user: { ...current, ...updates } });
       },
     }),
     {
-      name: 'tolima-auth',
+      name: 'tolima-auth-v2',
       partialize: (s) => ({ user: s.user, isAuthenticated: s.isAuthenticated }),
     }
   )
 );
 
-// Sync auth state changes
+// Sync auth state
 supabase.auth.onAuthStateChange(async (event, session) => {
   try {
     if (event === 'SIGNED_OUT') {
@@ -178,6 +148,6 @@ supabase.auth.onAuthStateChange(async (event, session) => {
       });
     }
   } catch (e) {
-    console.error('onAuthStateChange error:', e);
+    console.error('onAuthStateChange:', e);
   }
 });

@@ -8,11 +8,14 @@ function getUid(): string | null {
   return useAuthStore.getState().user?.id ?? null;
 }
 
-// Helper — gets current user ID, throws if not logged in
+// Helper — gets current user ID from store, with session fallback
 function requireUid(): string {
   const uid = getUid();
-  if (!uid) throw new Error('Debes iniciar sesión para continuar');
-  return uid;
+  if (uid) return uid;
+  // If store doesn't have user, check if we're just loading
+  throw new Error(
+    'No hay sesión activa. Por favor cierra sesión, vuelve a iniciarla y reintenta.'
+  );
 }
 
 // ─── PRODUCTS ────────────────────────────────────────────────────────────────
@@ -80,27 +83,51 @@ export function useCreateProduct() {
       subcategory?: string; stock: number; images: string[]; tags: string[];
     }) => {
       const uid = requireUid();
+      console.log('useCreateProduct: uid =', uid);
+
       const insert = {
-        vendor_id:   uid,
-        name:        payload.name,
-        description: payload.description,
-        price:       payload.price,
-        category:    payload.category,
-        subcategory: payload.subcategory ?? null,
-        stock:       payload.stock,
-        images:      payload.images,
-        tags:        payload.tags,
-        is_active:   true,
-        featured:    false,
-        rating:      0,
+        vendor_id:    uid,
+        name:         payload.name,
+        description:  payload.description || '',
+        price:        Number(payload.price),
+        category:     payload.category,
+        subcategory:  payload.subcategory || null,
+        stock:        Number(payload.stock),
+        images:       payload.images || [],
+        tags:         payload.tags || [],
+        is_active:    true,
+        featured:     false,
+        rating:       0,
         review_count: 0,
       };
-      console.log('Inserting product:', insert);
-      const { data, error } = await supabase.from('products').insert(insert).select().single();
+
+      console.log('Inserting:', JSON.stringify(insert));
+
+      // Add explicit timeout so it doesn't hang forever
+      const timeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Timeout: Supabase tardó más de 10 segundos. Verifica tu conexión.')), 10000)
+      );
+
+      const insertPromise = supabase
+        .from('products')
+        .insert(insert)
+        .select()
+        .single();
+
+      const result = await Promise.race([insertPromise, timeout]) as any;
+      const { data, error } = result;
+
       if (error) {
-        console.error('insert product error:', error);
-        throw new Error(error.message);
+        console.error('INSERT ERROR:', JSON.stringify(error));
+        throw new Error(
+          error.code === '42501' ? 'Sin permisos: verifica que corriste fix_definitivo.sql en Supabase' :
+          error.code === '23503' ? 'Tu perfil no existe en la base de datos. Cierra sesión y vuelve a entrar.' :
+          error.code === '23505' ? 'Producto duplicado' :
+          `Error ${error.code}: ${error.message}`
+        );
       }
+
+      console.log('INSERT OK:', data);
       return data;
     },
     onSuccess: () => {
@@ -109,7 +136,7 @@ export function useCreateProduct() {
       toast.success('¡Producto publicado!');
     },
     onError: (e: Error) => {
-      console.error('createProduct onError:', e.message);
+      console.error('createProduct ERROR:', e.message);
       toast.error(e.message);
     },
   });

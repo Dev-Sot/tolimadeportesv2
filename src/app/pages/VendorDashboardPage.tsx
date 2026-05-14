@@ -76,12 +76,8 @@ export function VendorDashboardPage() {
       setShowForm(false);
       setFormError('');
     } catch (err: any) {
-      const msg = err?.message ?? 'Error desconocido';
-      setFormError(
-        msg.includes('row-level security')
-          ? 'Sin permiso: asegúrate de tener rol "vendor" en tu perfil y haber corrido fix_rls_products.sql en Supabase'
-          : msg
-      );
+      console.error('Form submit error:', err);
+      setFormError(err?.message ?? 'Error desconocido al publicar');
     }
   }
 
