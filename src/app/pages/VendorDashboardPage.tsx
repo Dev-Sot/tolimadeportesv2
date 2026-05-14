@@ -186,10 +186,10 @@ export function VendorDashboardPage() {
                           Precio (COP) <span className="text-destructive">*</span>
                         </label>
                         <input
-                          required type="number" min="1" step="1000"
+                          required type="number" min="1"
                           value={form.price}
                           onChange={e => setForm({...form, price: e.target.value})}
-                          placeholder="120000"
+                          placeholder="Ej: 120000"
                           className="w-full px-3 py-2.5 border border-input rounded-xl bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                         />
                       </div>
