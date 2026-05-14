@@ -136,7 +136,7 @@ export function CoachesPage() {
                     <div className="mb-4">
                       <p className="text-sm font-medium mb-2">Especialidades</p>
                       <div className="flex flex-wrap gap-1">
-                        {coach.specialties.map((specialty) => (
+                        {(coach.specialties ?? []).map((specialty: string) => (
                           <Badge key={specialty} variant="outline" size="sm">
                             {specialty}
                           </Badge>
@@ -147,15 +147,15 @@ export function CoachesPage() {
                     <div className="mb-4">
                       <p className="text-sm font-medium mb-2">Certificaciones</p>
                       <div className="space-y-1">
-                        {coach.certifications.slice(0, 2).map((cert) => (
+                        {(coach.certifications ?? []).slice(0, 2).map((cert: string) => (
                           <div key={cert} className="flex items-center gap-2 text-sm text-muted-foreground">
                             <Award className="w-3 h-3" />
                             <span className="line-clamp-1">{cert}</span>
                           </div>
                         ))}
-                        {coach.certifications.length > 2 && (
+                        {(coach.certifications ?? []).length > 2 && (
                           <p className="text-xs text-muted-foreground ml-5">
-                            +{coach.certifications.length - 2} más
+                            +{(coach.certifications ?? []).length - 2} más
                           </p>
                         )}
                       </div>

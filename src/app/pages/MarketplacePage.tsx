@@ -26,8 +26,18 @@ export function MarketplacePage() {
     sortBy,
   });
 
-  // Fall back to mock data if Supabase not configured
-  const filteredProducts = rawProducts.length > 0 ? rawProducts : mockProducts;
+  // Use Supabase data; fall back to mockProducts filtered client-side
+  const filteredProducts = rawProducts.length > 0 ? rawProducts : mockProducts.filter((p) => {
+    const matchSearch = !searchQuery || p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.description.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchCat = !selectedCategory || p.category === selectedCategory;
+    const matchPrice = p.price <= priceRange[1];
+    return matchSearch && matchCat && matchPrice;
+  }).sort((a, b) => {
+    if (sortBy === 'price-asc') return a.price - b.price;
+    if (sortBy === 'price-desc') return b.price - a.price;
+    if (sortBy === 'rating') return b.rating - a.rating;
+    return (b.featured ? 1 : 0) - (a.featured ? 1 : 0);
+  });
 
   const clearFilters = () => {
     setSearchQuery('');

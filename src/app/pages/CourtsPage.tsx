@@ -144,14 +144,14 @@ export function CourtsPage() {
                     </div>
 
                     <div className="flex flex-wrap gap-1 mb-4">
-                      {court.amenities.slice(0, 3).map((amenity) => (
+                      {(court.amenities ?? []).slice(0, 3).map((amenity: string) => (
                         <Badge key={amenity} variant="outline" size="sm">
                           {amenity}
                         </Badge>
                       ))}
-                      {court.amenities.length > 3 && (
+                      {(court.amenities ?? []).length > 3 && (
                         <Badge variant="outline" size="sm">
-                          +{court.amenities.length - 3}
+                          +{(court.amenities ?? []).length - 3}
                         </Badge>
                       )}
                     </div>

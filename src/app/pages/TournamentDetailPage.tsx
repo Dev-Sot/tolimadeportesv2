@@ -96,7 +96,7 @@ export function TournamentDetailPage() {
                 </CardTitle></CardHeader>
                 <CardContent>
                   <div className="space-y-2">
-                    {tournament.prizes.map((prize: string, i: number) => (
+                    {(tournament.prizes ?? []).map((prize: string, i: number) => (
                       <div key={i} className="flex items-center gap-3">
                         <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold
                           ${i === 0 ? 'bg-yellow-400/20 text-yellow-600' :

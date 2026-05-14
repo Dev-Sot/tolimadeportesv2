@@ -1,118 +1,138 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { Star, ShoppingCart, Heart } from 'lucide-react';
-import { Card } from '../ui/Card';
+import { ShoppingCart, Heart, Star, Eye } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
-import type { Product } from '../../types';
-import { formatCurrency } from '../../lib/utils';
 import { useCartStore } from '../../stores/cartStore';
-import { useState } from 'react';
+import { formatCurrency } from '../../lib/utils';
+import type { Product } from '../../types';
 import { toast } from 'sonner';
 
-interface ProductCardProps {
+interface Props {
   product: Product;
+  viewMode?: 'grid' | 'list';
 }
 
-export function ProductCard({ product }: ProductCardProps) {
-  const addItem = useCartStore((state) => state.addItem);
-  const [isFavorite, setIsFavorite] = useState(false);
+export function ProductCard({ product, viewMode = 'grid' }: Props) {
+  const { addItem } = useCartStore();
+  const [isFav, setIsFav] = useState(false);
+  const [imgError, setImgError] = useState(false);
 
-  const handleAddToCart = (e: React.MouseEvent) => {
+  const reviewCount = product.review_count ?? product.reviewCount ?? 0;
+  const vendorName  = product.profiles?.name ?? product.vendor?.name ?? 'Vendedor';
+  const img = (!imgError && product.images?.[0]) ? product.images[0] : 'https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=400';
+
+  function handleAddToCart(e: React.MouseEvent<HTMLButtonElement>) {
     e.preventDefault();
+    e.stopPropagation();
     addItem(product);
-    toast.success('Producto agregado al carrito');
-  };
+    toast.success(`${product.name} agregado al carrito`);
+  }
 
-  const handleToggleFavorite = (e: React.MouseEvent) => {
+  function handleFav(e: React.MouseEvent<HTMLButtonElement>) {
     e.preventDefault();
-    setIsFavorite(!isFavorite);
-    toast.success(isFavorite ? 'Eliminado de favoritos' : 'Agregado a favoritos');
-  };
+    e.stopPropagation();
+    setIsFav((p) => !p);
+    toast.success(isFav ? 'Eliminado de favoritos' : 'Guardado en favoritos');
+  }
+
+  if (viewMode === 'list') {
+    return (
+      <Link to={`/marketplace/product/${product.id}`}>
+        <motion.div whileHover={{ y: -2 }} className="bg-card border border-border rounded-xl overflow-hidden flex gap-4 p-4 hover:shadow-md transition-shadow">
+          <img src={img} alt={product.name} onError={() => setImgError(true)}
+            className="w-24 h-24 object-cover rounded-lg flex-shrink-0" />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between gap-2">
+              <h3 className="font-semibold text-sm line-clamp-1">{product.name}</h3>
+              <p className="text-lg font-bold text-primary flex-shrink-0">{formatCurrency(product.price)}</p>
+            </div>
+            <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{product.description}</p>
+            <div className="flex items-center gap-3 mt-2">
+              <div className="flex items-center gap-1">
+                <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                <span className="text-xs font-medium">{product.rating}</span>
+                <span className="text-xs text-muted-foreground">({reviewCount})</span>
+              </div>
+              <span className="text-xs text-muted-foreground">{product.category}</span>
+              {product.stock <= 5 && product.stock > 0 && (
+                <Badge variant="warning" size="sm">¡Últimas {product.stock}!</Badge>
+              )}
+            </div>
+          </div>
+          <button onClick={handleAddToCart}
+            className="flex-shrink-0 p-2 rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors self-center">
+            <ShoppingCart className="w-4 h-4" />
+          </button>
+        </motion.div>
+      </Link>
+    );
+  }
 
   return (
     <Link to={`/marketplace/product/${product.id}`}>
-      <Card hover className="h-full overflow-hidden group">
-        <div className="relative overflow-hidden">
-          <img
-            src={product.images[0]}
-            alt={product.name}
-            className="w-full h-56 object-cover group-hover:scale-105 transition-transform duration-300"
-          />
+      <motion.div whileHover={{ y: -4 }} className="bg-card border border-border rounded-2xl overflow-hidden group hover:shadow-lg transition-shadow h-full flex flex-col">
+        {/* Image */}
+        <div className="relative overflow-hidden aspect-[4/3]">
+          <img src={img} alt={product.name} onError={() => setImgError(true)}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
           {product.featured && (
-            <Badge variant="accent" className="absolute top-3 left-3">
-              Destacado
-            </Badge>
+            <Badge variant="accent" size="sm" className="absolute top-3 left-3">Destacado</Badge>
           )}
-          <button
-            onClick={handleToggleFavorite}
-            className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/90 dark:bg-black/90 backdrop-blur-sm flex items-center justify-center hover:scale-110 transition-transform"
-          >
-            <Heart
-              className={`w-5 h-5 ${
-                isFavorite ? 'fill-red-500 text-red-500' : 'text-foreground'
-              }`}
-            />
-          </button>
-          {product.stock < 10 && (
-            <Badge variant="warning" className="absolute bottom-3 left-3">
-              Últimas {product.stock} unidades
-            </Badge>
+          {product.stock === 0 && (
+            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+              <Badge variant="destructive">Agotado</Badge>
+            </div>
           )}
+          {product.stock > 0 && product.stock <= 5 && (
+            <Badge variant="warning" size="sm" className="absolute top-3 right-3">¡Últimas {product.stock}!</Badge>
+          )}
+          {/* Hover actions */}
+          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all flex items-end justify-end p-3 gap-2 opacity-0 group-hover:opacity-100">
+            <button onClick={handleFav}
+              className={`p-2 rounded-full transition-all ${isFav ? 'bg-red-500 text-white' : 'bg-white/90 text-gray-700 hover:bg-red-50'}`}>
+              <Heart className={`w-4 h-4 ${isFav ? 'fill-current' : ''}`} />
+            </button>
+            <button onClick={handleAddToCart} disabled={product.stock === 0}
+              className="p-2 rounded-full bg-primary text-white hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
+              <ShoppingCart className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
-        <div className="p-4">
-          <div className="flex items-center justify-between mb-2">
-            <Badge variant="outline" size="sm">
-              {product.category}
-            </Badge>
-            <div className="flex items-center gap-1">
-              <Star className="w-4 h-4 fill-accent text-accent" />
-              <span className="text-sm font-medium">{product.rating}</span>
-              <span className="text-sm text-muted-foreground">({product.review_count ?? (product.review_count ?? product.reviewCount ?? 0) ?? 0})</span>
-            </div>
+        {/* Info */}
+        <div className="p-4 flex flex-col flex-1">
+          <Badge variant="outline" size="sm" className="w-fit mb-2">{product.category}</Badge>
+          <h3 className="font-semibold text-sm mb-1 line-clamp-2 group-hover:text-primary transition-colors flex-1">{product.name}</h3>
+          
+          <div className="flex items-center gap-1 mb-3">
+            <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
+            <span className="text-xs font-medium">{product.rating?.toFixed(1) ?? '0.0'}</span>
+            <span className="text-xs text-muted-foreground">({reviewCount})</span>
           </div>
 
-          <h3 className="font-semibold mb-2 line-clamp-2 group-hover:text-primary transition-colors">
-            {product.name}
-          </h3>
-
-          <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
-            {product.description}
-          </p>
-
-          <div className="flex items-center gap-2 mb-3">
-            <img
-              src={(product.profiles?.avatar ?? product.vendor?.avatar ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=vendor`)}
-              alt={(product.profiles?.name ?? product.vendor?.name ?? "Vendedor")}
-              className="w-6 h-6 rounded-full"
-            />
-            <span className="text-sm text-muted-foreground">{(product.profiles?.name ?? product.vendor?.name ?? "Vendedor")}</span>
-          </div>
-
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mt-auto">
             <div>
-              <div className="text-2xl font-bold text-primary">
-                {formatCurrency(product.price)}
-              </div>
-              {product.stock > 0 ? (
-                <p className="text-xs text-success">En stock</p>
-              ) : (
-                <p className="text-xs text-destructive">Agotado</p>
+              <p className="text-xl font-bold text-primary">{formatCurrency(product.price)}</p>
+              {product.stock > 0 && product.stock <= 10 && (
+                <p className="text-xs text-muted-foreground">{product.stock} disponibles</p>
               )}
             </div>
-            <Button
-              onClick={handleAddToCart}
-              disabled={product.stock === 0}
-              size="sm"
-              className="gap-1"
-            >
-              <ShoppingCart className="w-4 h-4" />
+            <button onClick={handleAddToCart} disabled={product.stock === 0}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary text-white text-xs font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+              <ShoppingCart className="w-3.5 h-3.5" />
               Agregar
-            </Button>
+            </button>
+          </div>
+
+          <div className="flex items-center gap-1.5 mt-3 pt-3 border-t border-border">
+            <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${vendorName}`} alt=""
+              className="w-5 h-5 rounded-full" />
+            <span className="text-xs text-muted-foreground truncate">{vendorName}</span>
           </div>
         </div>
-      </Card>
+      </motion.div>
     </Link>
   );
 }

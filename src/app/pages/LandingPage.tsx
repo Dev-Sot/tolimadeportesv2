@@ -294,7 +294,7 @@ export function LandingPage() {
                           <span className="text-sm ml-1">{product.rating}</span>
                         </div>
                         <span className="text-sm text-muted-foreground">
-                          ({(product.review_count ?? product.reviewCount ?? 0)})
+                          ({(((product as any).review_count ?? product.reviewCount ?? 0))})
                         </span>
                       </div>
                       <div className="text-2xl font-bold text-primary">

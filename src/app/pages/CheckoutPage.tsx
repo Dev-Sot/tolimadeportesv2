@@ -11,7 +11,7 @@ import { useCreateOrder } from '../hooks/useSupabase';
 import { formatCurrency } from '../lib/utils';
 import { toast } from 'sonner';
 
-const WOMPI_PUBLIC_KEY = import.meta.env.VITE_WOMPI_PUBLIC_KEY as string;
+const WOMPI_PUBLIC_KEY = import.meta.env.VITE_WOMPI_PUBLIC_KEY;
 
 function openWompi(amount: number, reference: string, email: string, onSuccess: (tx: any) => void) {
   const WC = (window as any).WidgetCheckout;

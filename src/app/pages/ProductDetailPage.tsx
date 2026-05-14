@@ -96,7 +96,7 @@ export function ProductDetailPage() {
             </motion.div>
 
             <div className="grid grid-cols-4 gap-3">
-              {product.images.map((image, index) => (
+              {(product.images ?? []).map((image: string, index: number) => (
                 <button
                   key={index}
                   onClick={() => setSelectedImage(index)}
@@ -143,15 +143,15 @@ export function ProductDetailPage() {
 
               <div className="flex items-center gap-3 mb-6 p-4 bg-secondary/20 rounded-lg">
                 <img
-                  src={product.profiles?.avatar ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=vendor`}
-                  alt={product.profiles?.name ?? 'Vendedor'}
+                  src={((product as any).profiles?.avatar ?? product.vendor?.avatar) ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=vendor`}
+                  alt={((product as any).profiles?.name ?? product.vendor?.name ?? "Vendedor") ?? 'Vendedor'}
                   className="w-12 h-12 rounded-full"
                 />
                 <div>
-                  <p className="font-medium">{product.profiles?.name ?? 'Vendedor'}</p>
+                  <p className="font-medium">{((product as any).profiles?.name ?? product.vendor?.name ?? "Vendedor") ?? 'Vendedor'}</p>
                   <div className="flex items-center gap-1 text-sm text-muted-foreground">
                     <Star className="w-4 h-4 fill-accent text-accent" />
-                    <span>{product.profiles?.rating ?? 4.8} vendedor confiable</span>
+                    <span>{((product as any).profiles?.rating ?? product.vendor?.rating ?? 4.8) ?? 4.8} vendedor confiable</span>
                   </div>
                 </div>
               </div>
@@ -176,7 +176,7 @@ export function ProductDetailPage() {
             </div>
 
             <div className="flex flex-wrap gap-2 mb-6">
-              {product.tags.map((tag) => (
+              {(product.tags ?? []).map((tag: string) => (
                 <Badge key={tag} variant="outline" size="sm">
                   {tag}
                 </Badge>

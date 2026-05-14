@@ -1,176 +1,139 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import {
-  Menu,
-  X,
-  ShoppingCart,
-  User,
-  LogOut,
-  Home,
-  Store,
-  Calendar,
-  Trophy,
-  Users,
-  MapPin,
-  Bell,
-  Settings,
-  LayoutDashboard,
-} from 'lucide-react';
+import { Menu, X, ShoppingCart, User, LogOut, Store, Calendar, Trophy, Users, MapPin, Bell, Settings, LayoutDashboard, ChevronDown } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { useCartStore } from '../../stores/cartStore';
-import { Button } from '../ui/Button';
-import { Badge } from '../ui/Badge';
 import { ThemeToggle } from '../ui/ThemeToggle';
 import { cn } from '../../lib/utils';
 
+const NAV = [
+  { name: 'Marketplace', href: '/marketplace', icon: Store },
+  { name: 'Canchas',     href: '/courts',      icon: MapPin },
+  { name: 'Torneos',     href: '/tournaments', icon: Trophy },
+  { name: 'Entrenadores',href: '/coaches',     icon: Users },
+  { name: 'Comunidad',   href: '/community',   icon: Users },
+];
+
+const ROLE_LABELS: Record<string, string> = {
+  customer: 'Cliente', vendor: 'Vendedor', admin: 'Administrador',
+  organizer: 'Organizador', court_owner: 'Dueño de Cancha', coach: 'Entrenador',
+};
+
 export function Navbar() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const location = useLocation();
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [userOpen, setUserOpen] = useState(false);
   const { user, isAuthenticated, logout } = useAuthStore();
-  const itemCount = useCartStore(state => state.getItemCount());
+  const itemCount = useCartStore((s) => s.getItemCount());
 
-  const navigation = [
-    { name: 'Inicio', href: '/', icon: Home },
-    { name: 'Marketplace', href: '/marketplace', icon: Store },
-    { name: 'Canchas', href: '/courts', icon: MapPin },
-    { name: 'Torneos', href: '/tournaments', icon: Trophy },
-    { name: 'Entrenadores', href: '/coaches', icon: Users },
-    { name: 'Comunidad', href: '/community', icon: Users },
-  ];
-
-  const getDashboardLink = () => {
-    if (!user) return '/dashboard';
-    switch (user.role) {
-      case 'vendor':
-        return '/vendor/dashboard';
-      case 'admin':
-        return '/admin/dashboard';
-      case 'organizer':
-        return '/organizer/dashboard';
-      case 'court_owner':
-        return '/owner/dashboard';
-      case 'coach':
-        return '/coach/dashboard';
-      default:
-        return '/dashboard';
-    }
-  };
+  const isActive = (href: string) => location.pathname === href || location.pathname.startsWith(href + '/');
 
   return (
     <nav className="bg-background/95 backdrop-blur-md border-b border-border sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          <div className="flex items-center gap-8">
-            <Link to="/" className="flex items-center gap-2">
-              <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center">
-                <Trophy className="w-6 h-6 text-white" />
-              </div>
-              <span className="font-bold text-xl">Tolima Deportes</span>
-            </Link>
-
-            <div className="hidden lg:flex items-center gap-1">
-              {navigation.map((item) => (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  className="px-3 py-2 rounded-lg text-sm font-medium text-foreground/80 hover:text-foreground hover:bg-secondary/50 transition-colors flex items-center gap-2"
-                >
-                  <item.icon className="w-4 h-4" />
-                  {item.name}
-                </Link>
-              ))}
+          {/* Logo */}
+          <Link to="/marketplace" className="flex items-center gap-2.5 flex-shrink-0">
+            <div className="w-9 h-9 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center">
+              <Trophy className="w-5 h-5 text-white" />
             </div>
+            <span className="font-bold text-lg hidden sm:block">Tolima Deportes</span>
+          </Link>
+
+          {/* Desktop nav */}
+          <div className="hidden lg:flex items-center gap-0.5">
+            {NAV.map((item) => (
+              <Link key={item.name} to={item.href}
+                className={cn(
+                  'px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5',
+                  isActive(item.href)
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-foreground/70 hover:text-foreground hover:bg-secondary/60'
+                )}>
+                <item.icon className="w-4 h-4" />
+                {item.name}
+              </Link>
+            ))}
           </div>
 
-          <div className="flex items-center gap-3">
+          {/* Right side */}
+          <div className="flex items-center gap-2">
             <ThemeToggle />
-            {isAuthenticated ? (
+
+            {/* Cart — always visible */}
+            <Link to="/cart" className="relative p-2 rounded-lg hover:bg-secondary/60 transition-colors">
+              <ShoppingCart className="w-5 h-5" />
+              {itemCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
+                  {itemCount > 9 ? '9+' : itemCount}
+                </span>
+              )}
+            </Link>
+
+            {isAuthenticated && user ? (
               <>
-                <Link to="/cart" className="relative p-2 rounded-lg hover:bg-secondary/50 transition-colors">
-                  <ShoppingCart className="w-5 h-5" />
-                  {itemCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-accent text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-medium">
-                      {itemCount}
-                    </span>
-                  )}
+                {/* Notifications */}
+                <Link to="/profile" className="relative p-2 rounded-lg hover:bg-secondary/60 transition-colors">
+                  <Bell className="w-5 h-5" />
                 </Link>
 
-                <button className="relative p-2 rounded-lg hover:bg-secondary/50 transition-colors">
-                  <Bell className="w-5 h-5" />
-                  <span className="absolute top-1 right-1 w-2 h-2 bg-accent rounded-full" />
-                </button>
-
+                {/* User menu */}
                 <div className="relative">
-                  <button
-                    onClick={() => setUserMenuOpen(!userMenuOpen)}
-                    className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-secondary/50 transition-colors"
-                  >
-                    {user?.avatar ? (
-                      <img src={user.avatar} alt={user.name} className="w-8 h-8 rounded-full" />
-                    ) : (
-                      <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
-                        <User className="w-5 h-5" />
-                      </div>
-                    )}
-                    <span className="hidden md:block text-sm font-medium">{user?.name}</span>
+                  <button onClick={() => setUserOpen(!userOpen)}
+                    className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-secondary/60 transition-colors">
+                    <img
+                      src={user.avatar ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`}
+                      alt={user.name}
+                      className="w-8 h-8 rounded-full border-2 border-primary/20"
+                    />
+                    <div className="hidden md:block text-left">
+                      <p className="text-sm font-medium leading-tight">{user.name.split(' ')[0]}</p>
+                      <p className="text-xs text-muted-foreground leading-tight">{ROLE_LABELS[user.role] ?? user.role}</p>
+                    </div>
+                    <ChevronDown className={cn('w-4 h-4 text-muted-foreground transition-transform hidden md:block', userOpen && 'rotate-180')} />
                   </button>
 
                   <AnimatePresence>
-                    {userMenuOpen && (
+                    {userOpen && (
                       <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
+                        initial={{ opacity: 0, y: -8, scale: 0.96 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -8, scale: 0.96 }}
                         transition={{ duration: 0.15 }}
-                        className="absolute right-0 mt-2 w-56 bg-card border border-border rounded-xl shadow-lg overflow-hidden"
+                        className="absolute right-0 mt-2 w-60 bg-card border border-border rounded-2xl shadow-xl overflow-hidden z-50"
+                        onMouseLeave={() => setUserOpen(false)}
                       >
-                        <div className="p-3 border-b border-border">
-                          <p className="font-medium">{user?.name}</p>
-                          <p className="text-sm text-muted-foreground">{user?.email}</p>
-                          <Badge variant="primary" size="sm" className="mt-2">
-                            {user?.role === 'customer' && 'Cliente'}
-                            {user?.role === 'vendor' && 'Vendedor'}
-                            {user?.role === 'admin' && 'Administrador'}
-                            {user?.role === 'organizer' && 'Organizador'}
-                            {user?.role === 'court_owner' && 'Dueño de Cancha'}
-                            {user?.role === 'coach' && 'Entrenador'}
-                          </Badge>
+                        <div className="p-4 border-b border-border bg-secondary/20">
+                          <div className="flex items-center gap-3">
+                            <img src={user.avatar ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`}
+                              alt="" className="w-10 h-10 rounded-full" />
+                            <div className="min-w-0">
+                              <p className="font-semibold text-sm truncate">{user.name}</p>
+                              <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                              <span className="inline-block mt-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-medium">
+                                {ROLE_LABELS[user.role] ?? user.role}
+                              </span>
+                            </div>
+                          </div>
                         </div>
                         <div className="p-1.5">
-                          <Link
-                            to={getDashboardLink()}
-                            className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-secondary/50 transition-colors text-sm"
-                            onClick={() => setUserMenuOpen(false)}
-                          >
-                            <LayoutDashboard className="w-4 h-4" />
-                            Dashboard
-                          </Link>
-                          <Link
-                            to="/profile"
-                            className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-secondary/50 transition-colors text-sm"
-                            onClick={() => setUserMenuOpen(false)}
-                          >
-                            <User className="w-4 h-4" />
-                            Mi Perfil
-                          </Link>
-                          <Link
-                            to="/settings"
-                            className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-secondary/50 transition-colors text-sm"
-                            onClick={() => setUserMenuOpen(false)}
-                          >
-                            <Settings className="w-4 h-4" />
-                            Configuración
-                          </Link>
-                          <button
-                            onClick={() => {
-                              logout();
-                              setUserMenuOpen(false);
-                            }}
-                            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-destructive/10 text-destructive transition-colors text-sm"
-                          >
+                          {[
+                            { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+                            { to: '/profile',   icon: User,            label: 'Mi Perfil' },
+                          ].map(({ to, icon: Icon, label }) => (
+                            <Link key={to} to={to}
+                              onClick={() => setUserOpen(false)}
+                              className="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-secondary/60 transition-colors text-sm">
+                              <Icon className="w-4 h-4 text-muted-foreground" />
+                              {label}
+                            </Link>
+                          ))}
+                          <div className="border-t border-border my-1" />
+                          <button onClick={() => { logout(); setUserOpen(false); }}
+                            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-destructive/10 text-destructive transition-colors text-sm">
                             <LogOut className="w-4 h-4" />
-                            Cerrar Sesión
+                            Cerrar sesión
                           </button>
                         </div>
                       </motion.div>
@@ -180,58 +143,57 @@ export function Navbar() {
               </>
             ) : (
               <div className="hidden md:flex items-center gap-2">
-                <Link to="/login">
-                  <Button variant="ghost">Iniciar Sesión</Button>
+                <Link to="/login"
+                  className="px-4 py-2 text-sm font-medium rounded-xl hover:bg-secondary/60 transition-colors">
+                  Iniciar sesión
                 </Link>
-                <Link to="/register">
-                  <Button variant="primary">Registrarse</Button>
+                <Link to="/register"
+                  className="px-4 py-2 text-sm font-medium rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-colors">
+                  Registrarse
                 </Link>
               </div>
             )}
 
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2 rounded-lg hover:bg-secondary/50 transition-colors"
-            >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            {/* Mobile menu toggle */}
+            <button onClick={() => setMobileOpen(!mobileOpen)}
+              className="lg:hidden p-2 rounded-lg hover:bg-secondary/60 transition-colors">
+              {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>
         </div>
       </div>
 
+      {/* Mobile menu */}
       <AnimatePresence>
-        {mobileMenuOpen && (
+        {mobileOpen && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="lg:hidden border-t border-border overflow-hidden"
+            className="lg:hidden border-t border-border overflow-hidden bg-background"
           >
-            <div className="px-4 py-4 space-y-1">
-              {navigation.map((item) => (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-foreground/80 hover:text-foreground hover:bg-secondary/50 transition-colors"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  <item.icon className="w-5 h-5" />
+            <div className="px-4 py-3 space-y-1">
+              {NAV.map((item) => (
+                <Link key={item.name} to={item.href}
+                  onClick={() => setMobileOpen(false)}
+                  className={cn(
+                    'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors',
+                    isActive(item.href) ? 'bg-primary/10 text-primary font-medium' : 'text-foreground/70 hover:bg-secondary/60'
+                  )}>
+                  <item.icon className="w-4 h-4" />
                   {item.name}
                 </Link>
               ))}
-
               {!isAuthenticated && (
-                <div className="pt-4 space-y-2">
-                  <Link to="/login" onClick={() => setMobileMenuOpen(false)}>
-                    <Button variant="ghost" fullWidth>
-                      Iniciar Sesión
-                    </Button>
+                <div className="pt-3 border-t border-border grid grid-cols-2 gap-2">
+                  <Link to="/login" onClick={() => setMobileOpen(false)}
+                    className="px-4 py-2.5 text-sm font-medium text-center border border-border rounded-xl hover:bg-secondary/60 transition-colors">
+                    Iniciar sesión
                   </Link>
-                  <Link to="/register" onClick={() => setMobileMenuOpen(false)}>
-                    <Button variant="primary" fullWidth>
-                      Registrarse
-                    </Button>
+                  <Link to="/register" onClick={() => setMobileOpen(false)}
+                    className="px-4 py-2.5 text-sm font-medium text-center bg-primary text-white rounded-xl hover:bg-primary/90 transition-colors">
+                    Registrarse
                   </Link>
                 </div>
               )}
