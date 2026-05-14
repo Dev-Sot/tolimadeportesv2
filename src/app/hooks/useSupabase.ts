@@ -103,19 +103,11 @@ export function useCreateProduct() {
 
       console.log('Inserting:', JSON.stringify(insert));
 
-      // Add explicit timeout so it doesn't hang forever
-      const timeout = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('Timeout: Supabase tardó más de 10 segundos. Verifica tu conexión.')), 10000)
-      );
-
-      const insertPromise = supabase
+      const { data, error } = await supabase
         .from('products')
         .insert(insert)
         .select()
         .single();
-
-      const result = await Promise.race([insertPromise, timeout]) as any;
-      const { data, error } = result;
 
       if (error) {
         console.error('INSERT ERROR:', JSON.stringify(error));
