@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { Search, SlidersHorizontal, Grid3x3, List, Store } from 'lucide-react';
+import { Search, SlidersHorizontal, Grid3x3, List, Store, AlertCircle, RefreshCw } from 'lucide-react';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
@@ -19,7 +19,7 @@ export function MarketplacePage() {
   const [showFilters, setShowFilters]         = useState(false);
   const [viewMode, setViewMode]               = useState<'grid' | 'list'>('grid');
 
-  const { data: products = [], isLoading } = useProducts({
+  const { data: products = [], isLoading, isError, refetch } = useProducts({
     category: selectedCategory || undefined,
     search:   searchQuery      || undefined,
     minPrice: priceRange[0] > 0        ? priceRange[0] : undefined,
@@ -145,7 +145,7 @@ export function MarketplacePage() {
           <div className="lg:col-span-3">
             <div className="flex items-center justify-between mb-6">
               <p className="text-sm text-muted-foreground">
-                {isLoading ? 'Cargando...' : `${products.length} producto${products.length !== 1 ? 's' : ''} encontrado${products.length !== 1 ? 's' : ''}`}
+                {isLoading ? 'Cargando...' : isError ? 'Error al cargar' : `${products.length} producto${products.length !== 1 ? 's' : ''} encontrado${products.length !== 1 ? 's' : ''}`}
               </p>
               <div className="flex items-center gap-2">
                 <button onClick={() => setViewMode('grid')}
@@ -168,8 +168,24 @@ export function MarketplacePage() {
               </div>
             )}
 
+            {/* Error state */}
+            {isError && (
+              <div className="flex flex-col items-center justify-center py-24 text-center">
+                <div className="w-20 h-20 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
+                  <AlertCircle className="w-10 h-10 text-destructive" />
+                </div>
+                <h3 className="text-lg font-semibold mb-2">No se pudieron cargar los productos</h3>
+                <p className="text-muted-foreground mb-5 text-sm max-w-xs">
+                  Hubo un problema al conectar con el servidor. Verifica tu conexión e intenta de nuevo.
+                </p>
+                <Button onClick={() => refetch()} className="gap-2">
+                  <RefreshCw className="w-4 h-4" /> Intentar de nuevo
+                </Button>
+              </div>
+            )}
+
             {/* Empty state */}
-            {!isLoading && products.length === 0 && (
+            {!isLoading && !isError && products.length === 0 && (
               <div className="flex flex-col items-center justify-center py-24 text-center">
                 <div className="w-20 h-20 rounded-full bg-secondary/50 flex items-center justify-center mb-4">
                   <Store className="w-10 h-10 text-muted-foreground" />
@@ -195,7 +211,7 @@ export function MarketplacePage() {
             )}
 
             {/* Products */}
-            {!isLoading && products.length > 0 && (
+            {!isLoading && !isError && products.length > 0 && (
               <div className={viewMode === 'grid' ? 'grid md:grid-cols-2 xl:grid-cols-3 gap-6' : 'space-y-4'}>
                 {products.map((product, index) => (
                   <motion.div key={product.id}

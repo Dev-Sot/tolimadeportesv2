@@ -26,22 +26,34 @@ export function useProducts(filters?: {
 }) {
   return useQuery({
     queryKey: ['products', filters],
-    queryFn: async () => {
-      let query = supabase
-        .from('products')
-        .select('*, profiles:vendor_id (id, name, avatar)')
-        .eq('is_active', true);
-      if (filters?.category) query = query.eq('category', filters.category);
-      if (filters?.search)   query = query.or(`name.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
-      if (filters?.minPrice) query = query.gte('price', filters.minPrice);
-      if (filters?.maxPrice) query = query.lte('price', filters.maxPrice);
-      if (filters?.sortBy === 'price-asc')   query = query.order('price', { ascending: true });
-      else if (filters?.sortBy === 'price-desc') query = query.order('price', { ascending: false });
-      else if (filters?.sortBy === 'rating')     query = query.order('rating', { ascending: false });
-      else query = query.order('featured', { ascending: false }).order('created_at', { ascending: false });
-      const { data, error } = await query;
-      if (error) { console.error('products:', error.message); return []; }
-      return data ?? [];
+    queryFn: async ({ signal }) => {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 20000);
+      signal.addEventListener('abort', () => { clearTimeout(timer); controller.abort(); });
+
+      try {
+        let query = supabase
+          .from('products')
+          .select('*, profiles:vendor_id (id, name, avatar)')
+          .eq('is_active', true);
+        if (filters?.category) query = query.eq('category', filters.category);
+        if (filters?.search)   query = query.or(`name.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
+        if (filters?.minPrice) query = query.gte('price', filters.minPrice);
+        if (filters?.maxPrice) query = query.lte('price', filters.maxPrice);
+        if (filters?.sortBy === 'price-asc')        query = query.order('price', { ascending: true });
+        else if (filters?.sortBy === 'price-desc')  query = query.order('price', { ascending: false });
+        else if (filters?.sortBy === 'rating')      query = query.order('rating', { ascending: false });
+        else query = query.order('featured', { ascending: false }).order('created_at', { ascending: false });
+
+        const { data, error } = await query.abortSignal(controller.signal);
+        if (error) {
+          console.error('products:', error.message);
+          throw new Error(error.message);
+        }
+        return data ?? [];
+      } finally {
+        clearTimeout(timer);
+      }
     },
     retry: 1, staleTime: 30000,
   });
