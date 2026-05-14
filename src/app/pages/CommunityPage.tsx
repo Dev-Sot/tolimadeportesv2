@@ -49,12 +49,13 @@ function CommentSection({ postId, commentsCount }: { postId: string; commentsCou
     if (!isAuthenticated || !text.trim()) return;
     setSubmitting(true);
     try {
-      const { data: { session: authSess } } = await supabase.auth.getSession();
-      const authUser = authSess?.user;
-      if (!authUser) { toast.error('Sesión expirada, inicia sesión de nuevo'); return; }
+      // Get uid from store - no network call needed
+      const { useAuthStore } = await import('../stores/authStore');
+      const uid = useAuthStore.getState().user?.id;
+      if (!uid) { toast.error('Debes iniciar sesión'); return; }
       const { data, error } = await supabase
         .from('post_comments')
-        .insert({ post_id: postId, user_id: authUser.id, content: text.trim() })
+        .insert({ post_id: postId, user_id: uid, content: text.trim() })
         .select('*, profiles:user_id (id, name, avatar)')
         .single();
       if (error) throw new Error(error.message);
