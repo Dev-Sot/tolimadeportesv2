@@ -16,6 +16,10 @@ import { CoachDetailPage } from './pages/CoachDetailPage';
 import { CommunityPage } from './pages/CommunityPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { ProfilePage } from './pages/ProfilePage';
+import { NotificationsPage } from './pages/NotificationsPage';
+import { VendorDashboardPage } from './pages/VendorDashboardPage';
+import { OrganizerDashboardPage } from './pages/OrganizerDashboardPage';
+import { CourtOwnerDashboardPage } from './pages/CourtOwnerDashboardPage';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { AboutPage } from './pages/AboutPage';
@@ -27,6 +31,7 @@ import { PrivacyPage } from './pages/PrivacyPage';
 import { ReturnsPage } from './pages/ReturnsPage';
 import { useAuthStore } from './stores/authStore';
 import { useEffect, type ReactNode } from 'react';
+import { ErrorBoundary } from './components/shared/ErrorBoundary';
 
 const qc = new QueryClient({
   defaultOptions: { queries: { refetchOnWindowFocus: false, retry: 1, staleTime: 1000 * 60 * 2 } },
@@ -34,12 +39,19 @@ const qc = new QueryClient({
 
 function PrivateRoute({ children }: { children: ReactNode }) {
   const ok = useAuthStore((s) => s.isAuthenticated);
-  return ok ? <>{children}</> : <Navigate to="/login" />;
+  return ok ? <>{children}</> : <Navigate to="/login" replace />;
+}
+
+function RoleRoute({ children, roles }: { children: ReactNode; roles: string[] }) {
+  const { isAuthenticated, user } = useAuthStore();
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (!roles.includes(user?.role ?? '')) return <Navigate to="/dashboard" replace />;
+  return <>{children}</>;
 }
 
 function PublicOnlyRoute({ children }: { children: ReactNode }) {
-  const ok = useAuthStore((s) => s.isAuthenticated);
-  return !ok ? <>{children}</> : <Navigate to="/dashboard" />;
+  const isAuth = useAuthStore((s) => s.isAuthenticated);
+  return !isAuth ? <>{children}</> : <Navigate to="/dashboard" replace />;
 }
 
 function Layout({ children, noFooter }: { children: ReactNode; noFooter?: boolean }) {
@@ -58,57 +70,67 @@ export default function App() {
   useEffect(() => { loadSession(); }, [loadSession]);
 
   return (
-    <QueryClientProvider client={qc}>
-      <BrowserRouter>
-        <Routes>
-          {/* Redirect root to marketplace — no landing page */}
-          <Route path="/" element={<Navigate to="/marketplace" replace />} />
+    <ErrorBoundary>
+      <QueryClientProvider client={qc}>
+        <BrowserRouter>
+          <Routes>
+            {/* Redirect root to marketplace */}
+            <Route path="/" element={<Navigate to="/marketplace" replace />} />
 
-          {/* Auth */}
-          <Route path="/login"    element={<PublicOnlyRoute><LoginPage /></PublicOnlyRoute>} />
-          <Route path="/register" element={<PublicOnlyRoute><RegisterPage /></PublicOnlyRoute>} />
+            {/* Auth */}
+            <Route path="/login"    element={<PublicOnlyRoute><LoginPage /></PublicOnlyRoute>} />
+            <Route path="/register" element={<PublicOnlyRoute><RegisterPage /></PublicOnlyRoute>} />
 
-          {/* Core platform */}
-          <Route path="/marketplace"               element={<Layout><MarketplacePage /></Layout>} />
-          <Route path="/marketplace/product/:id"   element={<Layout><ProductDetailPage /></Layout>} />
-          <Route path="/cart"                       element={<Layout><CartPage /></Layout>} />
-          <Route path="/checkout"                   element={<PrivateRoute><Layout noFooter><CheckoutPage /></Layout></PrivateRoute>} />
+            {/* Public marketplace */}
+            <Route path="/marketplace"             element={<Layout><MarketplacePage /></Layout>} />
+            <Route path="/marketplace/product/:id" element={<Layout><ProductDetailPage /></Layout>} />
+            <Route path="/cart"                    element={<Layout><CartPage /></Layout>} />
+            <Route path="/checkout"                element={<PrivateRoute><Layout noFooter><CheckoutPage /></Layout></PrivateRoute>} />
 
-          <Route path="/courts"      element={<Layout><CourtsPage /></Layout>} />
-          <Route path="/courts/:id"  element={<Layout><CourtDetailPage /></Layout>} />
+            {/* Courts */}
+            <Route path="/courts"     element={<Layout><CourtsPage /></Layout>} />
+            <Route path="/courts/:id" element={<Layout><CourtDetailPage /></Layout>} />
 
-          <Route path="/tournaments"     element={<Layout><TournamentsPage /></Layout>} />
-          <Route path="/tournaments/:id" element={<Layout><TournamentDetailPage /></Layout>} />
+            {/* Tournaments */}
+            <Route path="/tournaments"     element={<Layout><TournamentsPage /></Layout>} />
+            <Route path="/tournaments/:id" element={<Layout><TournamentDetailPage /></Layout>} />
 
-          <Route path="/coaches"     element={<Layout><CoachesPage /></Layout>} />
-          <Route path="/coaches/:id" element={<Layout><CoachDetailPage /></Layout>} />
+            {/* Coaches */}
+            <Route path="/coaches"     element={<Layout><CoachesPage /></Layout>} />
+            <Route path="/coaches/:id" element={<Layout><CoachDetailPage /></Layout>} />
 
-          <Route path="/community" element={<Layout><CommunityPage /></Layout>} />
+            {/* Community */}
+            <Route path="/community" element={<Layout><CommunityPage /></Layout>} />
 
-          {/* Auth-required */}
-          <Route path="/dashboard" element={<PrivateRoute><Layout><DashboardPage /></Layout></PrivateRoute>} />
-          <Route path="/profile"   element={<PrivateRoute><Layout><ProfilePage /></Layout></PrivateRoute>} />
+            {/* Auth-required */}
+            <Route path="/dashboard"      element={<PrivateRoute><Layout><DashboardPage /></Layout></PrivateRoute>} />
+            <Route path="/profile"        element={<PrivateRoute><Layout><ProfilePage /></Layout></PrivateRoute>} />
+            <Route path="/notifications"  element={<PrivateRoute><Layout><NotificationsPage /></Layout></PrivateRoute>} />
 
-          {/* Static pages */}
-          <Route path="/about"   element={<Layout><AboutPage /></Layout>} />
-          <Route path="/contact" element={<Layout><ContactPage /></Layout>} />
-          <Route path="/faq"     element={<Layout><FAQPage /></Layout>} />
-          <Route path="/blog"    element={<Layout><BlogPage /></Layout>} />
-          <Route path="/terms"   element={<Layout><TermsPage /></Layout>} />
-          <Route path="/privacy" element={<Layout><PrivacyPage /></Layout>} />
-          <Route path="/returns" element={<Layout><ReturnsPage /></Layout>} />
+            {/* Role-specific dashboards */}
+            <Route path="/vendor"       element={<RoleRoute roles={['vendor','admin']}><Layout><VendorDashboardPage /></Layout></RoleRoute>} />
+            <Route path="/organizer"    element={<RoleRoute roles={['organizer','admin']}><Layout><OrganizerDashboardPage /></Layout></RoleRoute>} />
+            <Route path="/court-owner"  element={<RoleRoute roles={['court_owner','admin']}><Layout><CourtOwnerDashboardPage /></Layout></RoleRoute>} />
 
-          {/* Legacy / broken footer links */}
-          <Route path="/marketplace/categories" element={<Navigate to="/marketplace" replace />} />
-          <Route path="/marketplace/deals"      element={<Navigate to="/marketplace" replace />} />
-          <Route path="/vendors"                element={<Navigate to="/marketplace" replace />} />
-          <Route path="/careers"                element={<Navigate to="/about" replace />} />
-          <Route path="/settings"               element={<Navigate to="/profile" replace />} />
+            {/* Static pages */}
+            <Route path="/about"   element={<Layout><AboutPage /></Layout>} />
+            <Route path="/contact" element={<Layout><ContactPage /></Layout>} />
+            <Route path="/faq"     element={<Layout><FAQPage /></Layout>} />
+            <Route path="/blog"    element={<Layout><BlogPage /></Layout>} />
+            <Route path="/terms"   element={<Layout><TermsPage /></Layout>} />
+            <Route path="/privacy" element={<Layout><PrivacyPage /></Layout>} />
+            <Route path="/returns" element={<Layout><ReturnsPage /></Layout>} />
 
-          {/* Catch all */}
-          <Route path="*" element={<Navigate to="/marketplace" replace />} />
-        </Routes>
-      </BrowserRouter>
-    </QueryClientProvider>
+            {/* Redirects */}
+            <Route path="/marketplace/categories" element={<Navigate to="/marketplace" replace />} />
+            <Route path="/marketplace/deals"      element={<Navigate to="/marketplace" replace />} />
+            <Route path="/vendors"                element={<Navigate to="/marketplace" replace />} />
+            <Route path="/careers"                element={<Navigate to="/about" replace />} />
+            <Route path="/settings"               element={<Navigate to="/profile" replace />} />
+            <Route path="*"                       element={<Navigate to="/marketplace" replace />} />
+          </Routes>
+        </BrowserRouter>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }

@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { ShoppingCart, Trash2, Plus, Minus, ArrowRight, Package } from 'lucide-react';
+import { ShoppingCart, Trash2, Plus, Minus, ArrowRight, Package , ArrowLeft } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';

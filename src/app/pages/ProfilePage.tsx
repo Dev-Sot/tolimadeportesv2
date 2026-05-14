@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { User, Package, Calendar, Trophy, Heart, Bell, Settings, Edit3, Save, X, MapPin, Phone, Mail } from 'lucide-react';
+import { User, Package, Calendar, Trophy, Heart, Bell, Settings, Edit3, Save, X, MapPin, Phone, Mail , ArrowLeft } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
@@ -54,6 +55,7 @@ export function ProfilePage() {
     setEditing(false);
   }
 
+  // Back button is in the header section
   if (!user) return (
     <div className="min-h-screen flex items-center justify-center">
       <p className="text-muted-foreground">Cargando perfil...</p>
@@ -65,7 +67,8 @@ export function ProfilePage() {
       {/* Header */}
       <div className="bg-gradient-to-br from-primary/5 via-accent/5 to-transparent border-b border-border py-10">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
+          <Link to="/dashboard" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-5 transition-colors"><ArrowLeft className="w-4 h-4" /> Volver al dashboard</Link>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
             <div className="relative">
               <img src={user.avatar ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.email}`}
                 alt={user?.name ?? ""} className="w-24 h-24 rounded-full border-4 border-background shadow-lg object-cover" />

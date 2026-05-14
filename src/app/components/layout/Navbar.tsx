@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { Menu, X, ShoppingCart, User, LogOut, Store, Calendar, Trophy, Users, MapPin, Bell, Settings, LayoutDashboard, ChevronDown } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
+import { useNotifications } from '../../hooks/useSupabase';
 import { useCartStore } from '../../stores/cartStore';
 import { ThemeToggle } from '../ui/ThemeToggle';
 import { cn } from '../../lib/utils';
@@ -26,6 +27,8 @@ export function Navbar() {
   const [userOpen, setUserOpen] = useState(false);
   const { user, isAuthenticated, logout } = useAuthStore();
   const itemCount = useCartStore((s) => s.getItemCount());
+  const { data: notifications = [] } = useNotifications();
+  const unreadCount = isAuthenticated ? notifications.filter((n: any) => !n.read).length : 0;
 
   const isActive = (href: string) => location.pathname === href || location.pathname.startsWith(href + '/');
 
@@ -74,8 +77,13 @@ export function Navbar() {
             {isAuthenticated && user ? (
               <>
                 {/* Notifications */}
-                <Link to="/profile" className="relative p-2 rounded-lg hover:bg-secondary/60 transition-colors">
+                <Link to="/notifications" className="relative p-2 rounded-lg hover:bg-secondary/60 transition-colors">
                   <Bell className="w-5 h-5" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
                 </Link>
 
                 {/* User menu */}

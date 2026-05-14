@@ -1,5 +1,5 @@
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import {
   ShoppingCart,
@@ -17,7 +17,6 @@ import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { Card } from '../components/ui/Card';
 import { useProduct, useProducts, useToggleFavorite, useFavorites } from '../hooks/useSupabase';
-import { useParams as _useParams } from 'react-router-dom';
 import { formatCurrency } from '../lib/utils';
 import { useCartStore } from '../stores/cartStore';
 import { toast } from 'sonner';

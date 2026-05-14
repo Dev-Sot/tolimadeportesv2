@@ -1,11 +1,11 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { Package, Calendar, Trophy, Heart, TrendingUp, ShoppingBag, MapPin, Star, Bell } from 'lucide-react';
+import { Package, Calendar, Trophy, Heart, ShoppingBag, MapPin, Star, Bell, TrendingUp, Store, Megaphone, Users } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { useAuthStore } from '../stores/authStore';
-import { useDashboardStats, useMyOrders, useMyReservations } from '../hooks/useSupabase';
+import { useDashboardStats, useMyOrders, useMyReservations, useNotifications } from '../hooks/useSupabase';
 import { formatCurrency, formatDate, formatRelativeTime } from '../lib/utils';
 
 const ORDER_STATUS: Record<string, { label: string; variant: any }> = {
@@ -16,80 +16,119 @@ const ORDER_STATUS: Record<string, { label: string; variant: any }> = {
   cancelled:  { label: 'Cancelado',  variant: 'destructive' },
 };
 
+// Role-specific quick actions
+const ROLE_ACTIONS: Record<string, Array<{ label: string; to: string; icon: any; color: string }>> = {
+  vendor: [
+    { label: 'Mis productos', to: '/vendor', icon: Store, color: 'text-primary' },
+    { label: 'Marketplace', to: '/marketplace', icon: ShoppingBag, color: 'text-accent' },
+    { label: 'Canchas', to: '/courts', icon: MapPin, color: 'text-blue-500' },
+    { label: 'Comunidad', to: '/community', icon: Users, color: 'text-purple-500' },
+  ],
+  organizer: [
+    { label: 'Mis torneos', to: '/organizer', icon: Trophy, color: 'text-accent' },
+    { label: 'Ver torneos', to: '/tournaments', icon: Megaphone, color: 'text-primary' },
+    { label: 'Marketplace', to: '/marketplace', icon: ShoppingBag, color: 'text-blue-500' },
+    { label: 'Comunidad', to: '/community', icon: Users, color: 'text-purple-500' },
+  ],
+  court_owner: [
+    { label: 'Mis canchas', to: '/court-owner', icon: MapPin, color: 'text-blue-500' },
+    { label: 'Ver canchas', to: '/courts', icon: Calendar, color: 'text-primary' },
+    { label: 'Torneos', to: '/tournaments', icon: Trophy, color: 'text-accent' },
+    { label: 'Comunidad', to: '/community', icon: Users, color: 'text-purple-500' },
+  ],
+  customer: [
+    { label: 'Marketplace', to: '/marketplace', icon: ShoppingBag, color: 'text-primary' },
+    { label: 'Torneos', to: '/tournaments', icon: Trophy, color: 'text-accent' },
+    { label: 'Canchas', to: '/courts', icon: MapPin, color: 'text-blue-500' },
+    { label: 'Entrenadores', to: '/coaches', icon: Star, color: 'text-purple-500' },
+  ],
+};
+
 export function DashboardPage() {
   const { user } = useAuthStore();
-  const { data: stats, isLoading: loadingStats } = useDashboardStats();
+  const { data: stats } = useDashboardStats();
   const { data: orders = [], isLoading: loadingOrders } = useMyOrders();
   const { data: reservations = [] } = useMyReservations();
+  const { data: notifications = [] } = useNotifications();
+  const unread = notifications.filter((n: any) => !n.read).length;
 
-  const STAT_CARDS = [
-    { label: 'Pedidos totales', value: stats?.total_orders ?? 0, icon: Package, color: 'bg-green-50 text-green-600', trend: '+2 este mes' },
-    { label: 'Reservas activas', value: stats?.active_reservations ?? 0, icon: Calendar, color: 'bg-blue-50 text-blue-600', trend: 'Próximas' },
-    { label: 'Torneos inscritos', value: stats?.tournaments_joined ?? 0, icon: Trophy, color: 'bg-yellow-50 text-yellow-600', trend: 'En curso' },
-    { label: 'Favoritos', value: stats?.total_favorites ?? 0, icon: Heart, color: 'bg-pink-50 text-pink-600', trend: 'Guardados' },
-  ];
+  const role = user?.role ?? 'customer';
+  const quickActions = ROLE_ACTIONS[role] ?? ROLE_ACTIONS.customer;
 
-  const QUICK = [
-    { label: 'Marketplace', icon: ShoppingBag, to: '/marketplace', color: 'text-primary' },
-    { label: 'Torneos', icon: Trophy, to: '/tournaments', color: 'text-accent' },
-    { label: 'Canchas', icon: MapPin, to: '/courts', color: 'text-blue-500' },
-    { label: 'Entrenadores', icon: Star, to: '/coaches', color: 'text-purple-500' },
+  const STATS = [
+    { label: 'Pedidos', value: stats?.total_orders ?? orders.length, icon: Package, color: 'bg-green-50 dark:bg-green-950 text-green-600' },
+    { label: 'Reservas activas', value: stats?.active_reservations ?? reservations.length, icon: Calendar, color: 'bg-blue-50 dark:bg-blue-950 text-blue-600' },
+    { label: 'Torneos', value: stats?.tournaments_joined ?? 0, icon: Trophy, color: 'bg-yellow-50 dark:bg-yellow-950 text-yellow-600' },
+    { label: 'Favoritos', value: stats?.total_favorites ?? 0, icon: Heart, color: 'bg-pink-50 dark:bg-pink-950 text-pink-600' },
   ];
 
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Welcome */}
+        {/* Welcome banner */}
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-to-br from-primary/5 via-accent/5 to-transparent rounded-2xl p-6 mb-8 border border-border">
-          <div className="flex items-center gap-4">
+          className="bg-gradient-to-br from-primary/8 via-accent/5 to-transparent rounded-2xl p-6 mb-8 border border-border">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
             <img src={user?.avatar ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.email}`}
-              alt={user?.name} className="w-16 h-16 rounded-full border-4 border-background shadow" />
-            <div>
+              alt={user?.name} className="w-16 h-16 rounded-full border-4 border-background shadow-md" />
+            <div className="flex-1">
               <h1 className="text-2xl font-bold">¡Hola, {user?.name?.split(' ')[0]}! 👋</h1>
-              <p className="text-muted-foreground text-sm">
-                Bienvenido a tu dashboard deportivo · {new Date().toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+              <p className="text-muted-foreground text-sm mt-0.5">
+                {new Date().toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
               </p>
+              <Badge variant="primary" size="sm" className="mt-2 capitalize">{role === 'court_owner' ? 'Dueño de cancha' : role === 'organizer' ? 'Organizador' : role}</Badge>
             </div>
-            {(stats?.unread_notifications ?? 0) > 0 && (
-              <Link to="/profile" className="ml-auto">
-                <div className="flex items-center gap-2 bg-destructive/10 text-destructive px-3 py-2 rounded-xl text-sm font-medium">
+            {unread > 0 && (
+              <Link to="/notifications">
+                <div className="flex items-center gap-2 bg-destructive/10 text-destructive px-4 py-2 rounded-xl text-sm font-medium hover:bg-destructive/20 transition-colors">
                   <Bell className="w-4 h-4" />
-                  {stats!.unread_notifications} sin leer
+                  {unread} sin leer
                 </div>
               </Link>
             )}
           </div>
         </motion.div>
 
+        {/* Role-specific CTA for vendors/organizers */}
+        {(role === 'vendor' || role === 'organizer' || role === 'court_owner') && (
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+            className="mb-8 p-5 bg-primary/5 border border-primary/20 rounded-2xl flex items-center justify-between gap-4">
+            <div>
+              <p className="font-semibold">
+                {role === 'vendor' ? '¿Listo para vender?' : role === 'organizer' ? '¿Listo para organizar?' : '¿Listo para recibir reservas?'}
+              </p>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                {role === 'vendor' ? 'Publica productos y llega a toda la comunidad deportiva del Tolima' :
+                 role === 'organizer' ? 'Crea torneos y conecta con equipos de los 47 municipios del Tolima' :
+                 'Registra tus canchas y empieza a recibir reservas digitales hoy'}
+              </p>
+            </div>
+            <Link to={role === 'vendor' ? '/vendor' : role === 'organizer' ? '/organizer' : '/court-owner'} className="flex-shrink-0">
+              <Button>
+                {role === 'vendor' ? 'Gestionar productos' : role === 'organizer' ? 'Gestionar torneos' : 'Gestionar canchas'}
+              </Button>
+            </Link>
+          </motion.div>
+        )}
+
         {/* Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {STAT_CARDS.map(({ label, value, icon: Icon, color, trend }, i) => (
-            <motion.div key={label} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.07 }}>
+          {STATS.map(({ label, value, icon: Icon, color }, i) => (
+            <motion.div key={label} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }}>
               <Card className="p-5">
-                <div className="flex items-center justify-between mb-3">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${color}`}>
-                    <Icon className="w-5 h-5" />
-                  </div>
-                  <span className="text-xs text-muted-foreground flex items-center gap-1">
-                    <TrendingUp className="w-3 h-3" />{trend}
-                  </span>
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${color}`}>
+                  <Icon className="w-5 h-5" />
                 </div>
-                {loadingStats ? (
-                  <div className="h-7 w-12 bg-secondary animate-pulse rounded mb-1" />
-                ) : (
-                  <p className="text-3xl font-bold">{value}</p>
-                )}
-                <p className="text-xs text-muted-foreground">{label}</p>
+                <p className="text-3xl font-bold">{value}</p>
+                <p className="text-xs text-muted-foreground mt-1">{label}</p>
               </Card>
             </motion.div>
           ))}
         </div>
 
         <div className="grid lg:grid-cols-3 gap-8">
-          {/* Orders */}
           <div className="lg:col-span-2 space-y-6">
+            {/* Recent orders */}
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -99,7 +138,7 @@ export function DashboardPage() {
               </CardHeader>
               <CardContent>
                 {loadingOrders ? (
-                  <div className="space-y-3">{[1,2,3].map(i=><div key={i} className="h-14 bg-secondary animate-pulse rounded-lg"/>)}</div>
+                  <div className="space-y-3">{[1,2].map(i => <div key={i} className="h-14 bg-secondary animate-pulse rounded-lg" />)}</div>
                 ) : orders.slice(0, 4).length === 0 ? (
                   <div className="text-center py-8">
                     <ShoppingBag className="w-10 h-10 mx-auto text-muted-foreground mb-2" />
@@ -112,14 +151,10 @@ export function DashboardPage() {
                   return (
                     <div key={order.id} className="flex items-center gap-3 py-3 border-b border-border last:border-0">
                       <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center flex-shrink-0 overflow-hidden">
-                        {first?.images?.[0] ? (
-                          <img src={first.images[0]} alt="" className="w-full h-full object-cover" />
-                        ) : <Package className="w-4 h-4 text-muted-foreground" />}
+                        {first?.images?.[0] ? <img src={first.images[0]} alt="" className="w-full h-full object-cover" /> : <Package className="w-4 h-4 text-muted-foreground" />}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">
-                          {first?.name ?? `Pedido #${order.id.slice(-6).toUpperCase()}`}
-                        </p>
+                        <p className="text-sm font-medium truncate">{first?.name ?? `Pedido #${order.id.slice(-6).toUpperCase()}`}</p>
                         <p className="text-xs text-muted-foreground">{formatRelativeTime(order.created_at)}</p>
                       </div>
                       <div className="text-right flex-shrink-0">
@@ -132,12 +167,12 @@ export function DashboardPage() {
               </CardContent>
             </Card>
 
-            {/* Reservations */}
+            {/* Upcoming reservations */}
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle>Próximas reservas</CardTitle>
-                  <Link to="/courts"><Button variant="ghost" size="sm">Nueva reserva →</Button></Link>
+                  <Link to="/courts"><Button variant="ghost" size="sm">Reservar →</Button></Link>
                 </div>
               </CardHeader>
               <CardContent>
@@ -149,14 +184,12 @@ export function DashboardPage() {
                   </div>
                 ) : reservations.slice(0, 3).map((r: any) => (
                   <div key={r.id} className="flex items-center gap-4 py-3 border-b border-border last:border-0">
-                    <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
+                    <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950 flex items-center justify-center flex-shrink-0">
                       <Calendar className="w-4 h-4 text-blue-600" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{r.courts?.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {formatDate(r.date)} · {r.start_time?.slice(0,5)} – {r.end_time?.slice(0,5)}
-                      </p>
+                      <p className="text-xs text-muted-foreground">{formatDate(r.date)} · {r.start_time?.slice(0,5)} – {r.end_time?.slice(0,5)}</p>
                     </div>
                     <div className="text-right flex-shrink-0">
                       <p className="text-sm font-semibold text-primary">{formatCurrency(r.total_price)}</p>
@@ -169,15 +202,15 @@ export function DashboardPage() {
           </div>
 
           {/* Sidebar */}
-          <div className="space-y-6">
+          <div className="space-y-5">
             <Card>
-              <CardHeader><CardTitle>Acciones rápidas</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-sm">Acciones rápidas</CardTitle></CardHeader>
               <CardContent className="grid grid-cols-2 gap-3">
-                {QUICK.map(({ label, icon: Icon, to, color }) => (
+                {quickActions.map(({ label, to, icon: Icon, color }) => (
                   <Link key={label} to={to}>
-                    <div className="flex flex-col items-center gap-2 p-4 rounded-xl border border-border hover:bg-secondary/50 transition-colors cursor-pointer text-center">
+                    <div className="flex flex-col items-center gap-2 p-4 rounded-xl border border-border hover:bg-secondary/50 transition-colors text-center cursor-pointer">
                       <Icon className={`w-6 h-6 ${color}`} />
-                      <span className="text-xs font-medium">{label}</span>
+                      <span className="text-xs font-medium leading-tight">{label}</span>
                     </div>
                   </Link>
                 ))}
@@ -185,29 +218,20 @@ export function DashboardPage() {
             </Card>
 
             <Card>
-              <CardHeader><CardTitle>Mi perfil</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-sm">Resumen financiero</CardTitle></CardHeader>
               <CardContent className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <img src={user?.avatar} alt="" className="w-10 h-10 rounded-full" />
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium truncate">{user?.name}</p>
-                    <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+                {[
+                  { label: 'Total gastado', value: formatCurrency(stats?.total_spent ?? 0) },
+                  { label: 'Pedidos completados', value: orders.filter((o: any) => o.status === 'delivered').length },
+                  { label: 'Notificaciones', value: unread > 0 ? `${unread} sin leer` : 'Al día' },
+                ].map(({ label, value }) => (
+                  <div key={label} className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">{label}</span>
+                    <span className="font-medium">{value}</span>
                   </div>
-                </div>
-                <div className="space-y-1 text-sm">
-                  {[
-                    { label: 'Rol', value: user?.role },
-                    { label: 'Ubicación', value: user?.location ?? 'No especificada' },
-                    { label: 'Total gastado', value: formatCurrency(stats?.total_spent ?? 0) },
-                  ].map(({ label, value }) => (
-                    <div key={label} className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">{label}</span>
-                      <span className="font-medium capitalize">{value}</span>
-                    </div>
-                  ))}
-                </div>
+                ))}
                 <Link to="/profile">
-                  <Button fullWidth variant="outline" size="sm">Ver perfil completo</Button>
+                  <Button fullWidth variant="outline" size="sm" className="mt-2">Ver perfil completo</Button>
                 </Link>
               </CardContent>
             </Card>
