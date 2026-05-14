@@ -6,7 +6,6 @@ import {
   Lock,
   User as UserIcon,
   Trophy,
-  ArrowLeft,
   ShoppingBag,
   Users,
   MapPin,
