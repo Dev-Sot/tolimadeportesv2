@@ -111,19 +111,25 @@ export const useAuthStore = create<AuthState>()(
           if (error) throw new Error(error.message);
           if (!data.user) throw new Error('No se pudo crear la cuenta.');
 
-          // Upsert profile regardless of trigger
-          await supabase.from('profiles').upsert({
+          // If email confirmation required, user.identities will be empty
+          if (data.user.identities?.length === 0) {
+            throw new Error('Este email ya está registrado. Intenta iniciar sesión.');
+          }
+
+          // Upsert profile — always set role explicitly
+          const { error: profileError } = await supabase.from('profiles').upsert({
             id: data.user.id,
             email,
             name,
             role,
             location: 'Ibagué, Tolima',
             avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
           }, { onConflict: 'id' });
 
-          // If email confirmation required, user.identities will be empty
-          if (data.user.identities?.length === 0) {
-            throw new Error('Este email ya está registrado. Intenta iniciar sesión.');
+          if (profileError) {
+            console.error('Profile upsert error:', profileError.message);
           }
 
           const { data: profile } = await supabase

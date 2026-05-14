@@ -30,6 +30,7 @@ export function OrganizerDashboardPage() {
     if (!form.name || !form.start_date || !form.end_date || !form.registration_deadline || !form.max_participants) {
       toast.error('Completa todos los campos obligatorios'); return;
     }
+    try {
     await createTournament.mutateAsync({
       name: form.name, description: form.description, sport: form.sport, location: form.location,
       start_date: form.start_date, end_date: form.end_date, registration_deadline: form.registration_deadline,
@@ -38,6 +39,7 @@ export function OrganizerDashboardPage() {
       rules: form.rules || undefined,
     });
     setShowForm(false); setForm(EMPTY);
+    } catch (err: any) { console.error(err?.message); }
   }
 
   const f = (k: string, v: string) => setForm(p => ({...p, [k]: v}));

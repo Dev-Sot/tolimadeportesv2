@@ -49,7 +49,8 @@ function CommentSection({ postId, commentsCount }: { postId: string; commentsCou
     if (!isAuthenticated || !text.trim()) return;
     setSubmitting(true);
     try {
-      const { data: { user: authUser } } = await supabase.auth.getUser();
+      const { data: { session: authSess } } = await supabase.auth.getSession();
+      const authUser = authSess?.user;
       if (!authUser) { toast.error('Sesión expirada, inicia sesión de nuevo'); return; }
       const { data, error } = await supabase
         .from('post_comments')

@@ -56,8 +56,9 @@ export function useCreateProduct() {
       name: string; description: string; price: number; category: string;
       subcategory?: string; stock: number; images: string[]; tags: string[];
     }) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Debes iniciar sesión');
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
+      if (!user) throw new Error('Debes iniciar sesión para continuar');
       const { data, error } = await supabase.from('products')
         .insert({ ...payload, vendor_id: user.id, is_active: true, featured: false })
         .select().single();
@@ -98,7 +99,8 @@ export function useMyProducts() {
   return useQuery({
     queryKey: ['my_products'],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
       if (!user) return [];
       const { data, error } = await supabase.from('products').select('*').eq('vendor_id', user.id).order('created_at', { ascending: false });
       if (error) { console.error(error.message); return []; }
@@ -155,7 +157,8 @@ export function useCreateReservation() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (payload: { court_id: string; date: string; start_time: string; end_time: string; total_price: number; notes?: string }) => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
       if (!user) throw new Error('Debes iniciar sesión para reservar');
       const { data, error } = await supabase.from('reservations').insert({ ...payload, customer_id: user.id }).select().single();
       if (error) throw new Error(error.message);
@@ -170,8 +173,9 @@ export function useCreateCourt() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (payload: { name: string; description: string; sport: string; address: string; city: string; price_per_hour: number; amenities: string[]; images: string[] }) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Debes iniciar sesión');
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
+      if (!user) throw new Error('Debes iniciar sesión para continuar');
       const { data, error } = await supabase.from('courts').insert({ ...payload, owner_id: user.id, is_active: true, featured: false }).select().single();
       if (error) throw new Error(error.message);
       return data;
@@ -185,7 +189,8 @@ export function useMyCourts() {
   return useQuery({
     queryKey: ['my_courts'],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
       if (!user) return [];
       const { data, error } = await supabase.from('courts').select('*').eq('owner_id', user.id).order('created_at', { ascending: false });
       if (error) { console.error(error.message); return []; }
@@ -230,8 +235,9 @@ export function useJoinTournament() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ tournamentId, teamName }: { tournamentId: string; teamName?: string }) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Debes iniciar sesión');
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
+      if (!user) throw new Error('Debes iniciar sesión para continuar');
       const { data, error } = await supabase.from('tournament_participants').insert({ tournament_id: tournamentId, user_id: user.id, team_name: teamName }).select().single();
       if (error) { if (error.code === '23505') throw new Error('Ya estás inscrito'); throw new Error(error.message); }
       return data;
@@ -245,8 +251,9 @@ export function useCreateTournament() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (payload: { name: string; description: string; sport: string; location: string; start_date: string; end_date: string; registration_deadline: string; max_participants: number; entry_fee: number; prizes: string[]; rules?: string }) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Debes iniciar sesión');
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
+      if (!user) throw new Error('Debes iniciar sesión para continuar');
       const { data, error } = await supabase.from('tournaments').insert({ ...payload, organizer_id: user.id, status: 'upcoming', featured: false, current_participants: 0 }).select().single();
       if (error) throw new Error(error.message);
       return data;
@@ -260,7 +267,8 @@ export function useMyTournaments() {
   return useQuery({
     queryKey: ['my_tournaments'],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
       if (!user) return [];
       const { data, error } = await supabase.from('tournaments').select('*').eq('organizer_id', user.id).order('created_at', { ascending: false });
       if (error) { console.error(error.message); return []; }
@@ -316,8 +324,9 @@ export function useCreateReview() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (payload: { target_id: string; target_type: string; rating: number; comment: string }) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Debes iniciar sesión');
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
+      if (!user) throw new Error('Debes iniciar sesión para continuar');
       const { data, error } = await supabase.from('reviews').insert({ ...payload, user_id: user.id }).select().single();
       if (error) { if (error.code === '23505') throw new Error('Ya dejaste una reseña'); throw new Error(error.message); }
       return data;
@@ -344,8 +353,9 @@ export function useCreatePost() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (payload: { content: string; sport?: string }) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Debes iniciar sesión');
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
+      if (!user) throw new Error('Debes iniciar sesión para continuar');
       const { data, error } = await supabase.from('posts').insert({ ...payload, user_id: user.id }).select().single();
       if (error) throw new Error(error.message);
       return data;
@@ -359,7 +369,8 @@ export function useToggleLike() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ postId, liked }: { postId: string; liked: boolean }) => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
       if (!user) throw new Error('Inicia sesión para dar like');
       if (liked) await supabase.from('post_likes').delete().eq('post_id', postId).eq('user_id', user.id);
       else await supabase.from('post_likes').insert({ post_id: postId, user_id: user.id });
@@ -374,7 +385,8 @@ export function useMyOrders() {
   return useQuery({
     queryKey: ['my_orders'],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
       if (!user) return [];
       const { data, error } = await supabase.from('orders').select('*, order_items (*, products:product_id (id, name, images, price))').eq('customer_id', user.id).order('created_at', { ascending: false });
       if (error) { console.error(error.message); return []; }
@@ -387,8 +399,9 @@ export function useCreateOrder() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (payload: { items: Array<{ product_id: string; quantity: number; unit_price: number }>; total: number; shipping_address: object; payment_method: string }) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Debes iniciar sesión');
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
+      if (!user) throw new Error('Debes iniciar sesión para continuar');
       const { data: order, error: orderError } = await supabase.from('orders').insert({ customer_id: user.id, total: payload.total, shipping_address: payload.shipping_address, payment_method: payload.payment_method, status: 'pending' }).select().single();
       if (orderError) throw new Error(orderError.message);
       const { error: itemsError } = await supabase.from('order_items').insert(payload.items.map(i => ({ ...i, order_id: order.id })));
@@ -405,7 +418,8 @@ export function useVendorOrders() {
   return useQuery({
     queryKey: ['vendor_orders'],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
       if (!user) return [];
       const { data, error } = await supabase
         .from('order_items')
@@ -423,7 +437,8 @@ export function useNotifications() {
   return useQuery({
     queryKey: ['notifications'],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
       if (!user) return [];
       const { data, error } = await supabase.from('notifications').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(20);
       if (error) { console.error(error.message); return []; }
@@ -448,7 +463,8 @@ export function useMarkAllNotificationsRead() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
       if (!user) return;
       await supabase.from('notifications').update({ read: true }).eq('user_id', user.id).eq('read', false);
     },
@@ -472,7 +488,8 @@ export function useMyReservations() {
   return useQuery({
     queryKey: ['my_reservations'],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
       if (!user) return [];
       const { data, error } = await supabase.from('reservations').select('*, courts (id, name, address, city, sport, images)').eq('customer_id', user.id).gte('date', new Date().toISOString().split('T')[0]).order('date', { ascending: true });
       if (error) { console.error(error.message); return []; }
@@ -486,7 +503,8 @@ export function useFavorites() {
   return useQuery({
     queryKey: ['favorites'],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
       if (!user) return [];
       const { data, error } = await supabase.from('favorites').select('*').eq('user_id', user.id);
       if (error) { console.error(error.message); return []; }
@@ -499,7 +517,8 @@ export function useToggleFavorite() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ targetId, targetType, isFav }: { targetId: string; targetType: string; isFav: boolean }) => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
       if (!user) throw new Error('Inicia sesión para guardar favoritos');
       if (isFav) await supabase.from('favorites').delete().eq('user_id', user.id).eq('target_id', targetId);
       else await supabase.from('favorites').insert({ user_id: user.id, target_id: targetId, target_type: targetType });
@@ -515,7 +534,8 @@ export function useUpdateProfile() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (updates: { name?: string; bio?: string; phone?: string; location?: string }) => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
       if (!user) throw new Error('No autenticado');
       const { data, error } = await supabase.from('profiles').update(updates).eq('id', user.id).select().single();
       if (error) throw new Error(error.message);

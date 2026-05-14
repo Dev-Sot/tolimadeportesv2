@@ -25,6 +25,7 @@ export function CourtOwnerDashboardPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!form.name || !form.address || !form.price_per_hour) { toast.error('Completa los campos obligatorios'); return; }
+    try {
     await createCourt.mutateAsync({
       name: form.name, description: form.description, sport: form.sport,
       address: form.address, city: form.city,
@@ -33,6 +34,7 @@ export function CourtOwnerDashboardPage() {
       images: form.images.split('\n').map(s => s.trim()).filter(Boolean),
     });
     setShowForm(false); setForm(EMPTY);
+    } catch (err: any) { console.error(err?.message); }
   }
 
   return (
