@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { Menu, X, ShoppingCart, User, LogOut, Store, Calendar, Trophy, Users, MapPin, Bell, Settings, LayoutDashboard, ChevronDown } from 'lucide-react';
+import { Menu, X, ShoppingCart, User, LogOut, Store, Trophy, Users, MapPin, Bell, LayoutDashboard, ChevronDown, RefreshCw } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { useNotifications } from '../../hooks/useSupabase';
 import { useCartStore } from '../../stores/cartStore';
@@ -25,7 +25,7 @@ export function Navbar() {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userOpen, setUserOpen] = useState(false);
-  const { user, isAuthenticated, logout } = useAuthStore();
+  const { user, isAuthenticated, logout, activeRole, setActiveRole } = useAuthStore();
   const itemCount = useCartStore((s) => s.getItemCount());
   const { data: notifications = [] } = useNotifications();
   const unreadCount = isAuthenticated ? notifications.filter((n: any) => !n.read).length : 0;
@@ -130,7 +130,7 @@ export function Navbar() {
                       />
                       <div className="hidden md:block text-left">
                         <p className="text-sm font-medium leading-tight">{user.name.split(' ')[0]}</p>
-                        <p className="text-xs text-muted-foreground leading-tight">{ROLE_LABELS[user.role] ?? user.role}</p>
+                        <p className="text-xs text-muted-foreground leading-tight">{ROLE_LABELS[activeRole] ?? activeRole}</p>
                       </div>
                       <ChevronDown
                         className={cn('w-4 h-4 text-muted-foreground transition-transform hidden md:block', userOpen && 'rotate-180')}
@@ -151,7 +151,7 @@ export function Navbar() {
                           onMouseLeave={() => setUserOpen(false)}
                         >
                           <div className="p-4 border-b border-border bg-secondary/20">
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-3 mb-3">
                               <img
                                 src={user.avatar ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`}
                                 alt=""
@@ -161,11 +161,34 @@ export function Navbar() {
                               <div className="min-w-0">
                                 <p className="font-semibold text-sm truncate">{user.name}</p>
                                 <p className="text-xs text-muted-foreground truncate">{user.email}</p>
-                                <span className="inline-block mt-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-medium">
-                                  {ROLE_LABELS[user.role] ?? user.role}
-                                </span>
                               </div>
                             </div>
+                            {(user.roles ?? [user.role]).length > 1 ? (
+                              <div>
+                                <p className="text-xs text-muted-foreground flex items-center gap-1 mb-2">
+                                  <RefreshCw className="w-3 h-3" aria-hidden="true" /> Cambiar perfil
+                                </p>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {(user.roles ?? [user.role]).map((r) => (
+                                    <button
+                                      key={r}
+                                      onClick={() => setActiveRole(r)}
+                                      className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+                                        r === activeRole
+                                          ? 'bg-primary text-primary-foreground'
+                                          : 'bg-secondary text-muted-foreground hover:text-foreground'
+                                      }`}
+                                    >
+                                      {ROLE_LABELS[r] ?? r}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            ) : (
+                              <span className="inline-block px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-medium">
+                                {ROLE_LABELS[activeRole] ?? activeRole}
+                              </span>
+                            )}
                           </div>
                           <div className="p-1.5" role="none">
                             {[
