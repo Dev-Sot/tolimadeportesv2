@@ -179,27 +179,35 @@ export function RegisterPage() {
 
           {step === 1 ? (
             <div>
-              <div className="grid md:grid-cols-2 gap-4 mb-6">
+              <div className="grid md:grid-cols-2 gap-4 mb-4">
                 {roles.map((roleOption) => (
                   <Card
                     key={roleOption.value}
                     onClick={() => setRole(roleOption.value)}
-                    className={`cursor-pointer transition-all ${
+                    className={`cursor-pointer transition-all p-4 ${
                       role === roleOption.value
                         ? 'border-2 border-primary ring-2 ring-primary/20'
                         : 'border border-border hover:border-primary/50'
                     }`}
                   >
-                    <div
-                      className={`w-12 h-12 rounded-lg bg-gradient-to-br ${roleOption.color} flex items-center justify-center mb-3`}
-                    >
-                      <roleOption.icon className="w-6 h-6 text-white" />
+                    <div className="flex items-start justify-between mb-3">
+                      <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${roleOption.color} flex items-center justify-center`}>
+                        <roleOption.icon className="w-6 h-6 text-white" />
+                      </div>
+                      {role === roleOption.value && (
+                        <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                          <Check className="w-3 h-3 text-white" />
+                        </div>
+                      )}
                     </div>
                     <h3 className="font-semibold mb-1">{roleOption.label}</h3>
                     <p className="text-sm text-muted-foreground">{roleOption.description}</p>
                   </Card>
                 ))}
               </div>
+              <p className="text-xs text-muted-foreground text-center mb-6">
+                Puedes agregar mas roles desde tu perfil despues de registrarte.
+              </p>
               <Button onClick={() => setStep(2)} fullWidth size="lg">
                 Continuar
               </Button>
