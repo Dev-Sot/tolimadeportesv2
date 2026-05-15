@@ -1,14 +1,25 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { Plus, Package, Edit3, Trash2, X, DollarSign, Layers, ArrowLeft, AlertCircle } from 'lucide-react';
+import { Plus, Package, Edit3, Trash2, X, DollarSign, Layers, ArrowLeft, AlertCircle, ShoppingBag, BarChart2 } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { ImageUpload } from '../components/shared/ImageUpload';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
-import { Card } from '../components/ui/Card';
-import { useMyProducts, useCreateProduct, useUpdateProduct, useDeleteProduct } from '../hooks/useSupabase';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
+import { useMyProducts, useCreateProduct, useUpdateProduct, useDeleteProduct, useVendorOrders } from '../hooks/useSupabase';
 import { formatCurrency, formatRelativeTime } from '../lib/utils';
 import { toast } from 'sonner';
+
+type Tab = 'products' | 'orders' | 'stats';
+
+const ORDER_STATUS: Record<string, { label: string; variant: any }> = {
+  pending:    { label: 'Pendiente',   variant: 'warning' },
+  processing: { label: 'Procesando', variant: 'info' },
+  shipped:    { label: 'Enviado',     variant: 'info' },
+  delivered:  { label: 'Entregado',  variant: 'success' },
+  cancelled:  { label: 'Cancelado',  variant: 'destructive' },
+};
 
 const CATEGORIES = ['Fútbol','Tenis','Baloncesto','Gimnasio','Natación','Ciclismo','Running','Volleyball'];
 
@@ -23,14 +34,28 @@ const EMPTY: ProductForm = {
 
 export function VendorDashboardPage() {
   const { data: products = [], isLoading } = useMyProducts();
+  const { data: vendorOrders = [], isLoading: loadingOrders } = useVendorOrders();
   const createProduct = useCreateProduct();
   const updateProduct = useUpdateProduct();
   const deleteProduct = useDeleteProduct();
 
+  const [tab, setTab]         = useState<Tab>('products');
   const [showForm, setShowForm] = useState(false);
   const [formError, setFormError] = useState('');
   const [editId, setEditId]   = useState<string | null>(null);
   const [form, setForm]       = useState<ProductForm>(EMPTY);
+
+  // Stats calculadas
+  const totalRevenue = vendorOrders
+    .filter((o: any) => o.orders?.status === 'delivered')
+    .reduce((s: number, o: any) => s + o.unit_price * o.quantity, 0);
+  const lowStock = products.filter((p: any) => p.stock > 0 && p.stock <= 5);
+  const salesByCategory = Object.entries(
+    products.reduce((acc: Record<string, number>, p: any) => {
+      acc[p.category] = (acc[p.category] ?? 0) + p.price;
+      return acc;
+    }, {})
+  ).map(([name, value]) => ({ name, value }));
 
   function openCreate() {
     setForm(EMPTY); setEditId(null); setFormError(''); setShowForm(true);
@@ -105,17 +130,41 @@ export function VendorDashboardPage() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
           {[
-            { label: 'Total productos',    value: products.length,                                           icon: Package },
-            { label: 'En stock',           value: products.filter((p: any) => p.stock > 0).length,           icon: Layers },
-            { label: 'Valor del catálogo', value: formatCurrency(products.reduce((s: number, p: any) => s + p.price, 0)), icon: DollarSign },
+            { label: 'Productos',       value: products.length,                                                icon: Package },
+            { label: 'En stock',        value: products.filter((p: any) => p.stock > 0).length,               icon: Layers },
+            { label: 'Pedidos totales', value: vendorOrders.length,                                           icon: ShoppingBag },
+            { label: 'Ingresos',        value: formatCurrency(totalRevenue),                                  icon: DollarSign },
           ].map(({ label, value, icon: Icon }) => (
-            <Card key={label} className="p-5">
+            <Card key={label} className="p-4">
               <Icon className="w-5 h-5 text-primary mb-2" />
-              <p className="text-2xl font-bold">{value}</p>
+              <p className="text-xl font-bold">{value}</p>
               <p className="text-xs text-muted-foreground">{label}</p>
             </Card>
+          ))}
+        </div>
+
+        {/* Alerta stock bajo */}
+        {lowStock.length > 0 && (
+          <div className="mb-6 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-yellow-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-yellow-700 dark:text-yellow-400">Stock bajo en {lowStock.length} producto{lowStock.length !== 1 ? 's' : ''}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {lowStock.map((p: any) => `${p.name} (${p.stock})`).join(' · ')}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Tabs */}
+        <div className="flex gap-1 p-1 bg-secondary/50 rounded-xl mb-6 w-fit">
+          {([['products', 'Productos'], ['orders', 'Pedidos'], ['stats', 'Estadísticas']] as [Tab, string][]).map(([id, label]) => (
+            <button key={id} onClick={() => setTab(id)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab === id ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
+              {label}
+            </button>
           ))}
         </div>
 
@@ -272,14 +321,14 @@ export function VendorDashboardPage() {
           )}
         </AnimatePresence>
 
-        {/* Products list */}
-        {isLoading ? (
+        {/* ── TAB: PRODUCTS ── */}
+        {tab === 'products' && isLoading ? (
           <div className="space-y-3">
             {[1,2,3].map(i => (
               <div key={i} className="h-20 bg-secondary animate-pulse rounded-xl" />
             ))}
           </div>
-        ) : products.length === 0 ? (
+        ) : tab === 'products' && products.length === 0 ? (
           <div className="text-center py-20">
             <Package className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
             <h3 className="text-xl font-semibold mb-2">Aún no tienes productos</h3>
@@ -290,7 +339,7 @@ export function VendorDashboardPage() {
               <Plus className="w-4 h-4" /> Publicar primer producto
             </Button>
           </div>
-        ) : (
+        ) : tab === 'products' ? (
           <div className="space-y-3">
             {products.map((p: any) => (
               <motion.div
@@ -353,6 +402,82 @@ export function VendorDashboardPage() {
                 </Card>
               </motion.div>
             ))}
+          </div>
+        ) : null}
+
+        {/* ── TAB: ORDERS ── */}
+        {tab === 'orders' && (
+          loadingOrders ? (
+            <div className="space-y-3">{[1,2,3].map(i => <div key={i} className="h-16 bg-secondary animate-pulse rounded-xl" />)}</div>
+          ) : vendorOrders.length === 0 ? (
+            <div className="text-center py-20">
+              <ShoppingBag className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+              <h3 className="text-xl font-semibold mb-2">Aún no tienes pedidos</h3>
+              <p className="text-muted-foreground">Cuando alguien compre tus productos aparecerán aquí</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {vendorOrders.map((item: any) => {
+                const s = ORDER_STATUS[item.orders?.status] ?? { label: item.orders?.status, variant: 'default' };
+                return (
+                  <Card key={item.id} className="p-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-secondary overflow-hidden shrink-0 flex items-center justify-center">
+                        {item.products?.images?.[0]
+                          ? <img src={item.products.images[0]} alt="" className="w-full h-full object-cover" />
+                          : <Package className="w-5 h-5 text-muted-foreground" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold truncate">{item.products?.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          x{item.quantity} · {item.orders?.profiles?.name ?? 'Cliente'} · {formatRelativeTime(item.orders?.created_at)}
+                        </p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-sm font-bold text-primary">{formatCurrency(item.unit_price * item.quantity)}</p>
+                        <Badge variant={s.variant} size="sm">{s.label}</Badge>
+                      </div>
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          )
+        )}
+
+        {/* ── TAB: STATS ── */}
+        {tab === 'stats' && (
+          <div className="space-y-6">
+            <Card>
+              <CardHeader><CardTitle className="text-sm">Valor de catálogo por categoría</CardTitle></CardHeader>
+              <CardContent>
+                {salesByCategory.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-8">Sin datos aún</p>
+                ) : (
+                  <ResponsiveContainer width="100%" height={220}>
+                    <BarChart data={salesByCategory}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                      <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                      <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `$${(v/1000).toFixed(0)}k`} />
+                      <Tooltip formatter={(v: number) => formatCurrency(v)} />
+                      <Bar dataKey="value" fill="var(--primary)" radius={[4,4,0,0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </CardContent>
+            </Card>
+            <div className="grid sm:grid-cols-3 gap-4">
+              {[
+                { label: 'Productos agotados', value: products.filter((p: any) => p.stock === 0).length },
+                { label: 'Pedidos entregados', value: vendorOrders.filter((o: any) => o.orders?.status === 'delivered').length },
+                { label: 'Rating promedio',    value: products.length ? (products.reduce((s: number, p: any) => s + (p.rating ?? 0), 0) / products.length).toFixed(1) : '—' },
+              ].map(({ label, value }) => (
+                <Card key={label} className="p-5 text-center">
+                  <p className="text-3xl font-bold text-primary">{value}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{label}</p>
+                </Card>
+              ))}
+            </div>
           </div>
         )}
       </div>

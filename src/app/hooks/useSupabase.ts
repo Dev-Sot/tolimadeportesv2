@@ -1,7 +1,15 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from '../stores/authStore';
 import { toast } from 'sonner';
+
+// ─── HELPER: crear notificación ───────────────────────────────────────────────
+async function insertNotification(
+  userId: string, type: string, title: string, message: string, link?: string
+) {
+  await supabase.from('notifications').insert({ user_id: userId, type, title, message, link, read: false });
+}
 
 // Helper — gets current user ID from store (no network call)
 function getUid(): string | null {
@@ -249,6 +257,15 @@ export function useCreateReservation() {
       const { data, error } = await supabase.from('reservations')
         .insert({ ...payload, customer_id: uid }).select().single();
       if (error) throw new Error(error.message);
+      // Notificar al dueño de la cancha
+      const { data: court } = await supabase.from('courts')
+        .select('owner_id, name').eq('id', payload.court_id).single();
+      if (court?.owner_id && court.owner_id !== uid) {
+        await insertNotification(court.owner_id, 'reservation',
+          'Nueva reserva recibida',
+          `Alguien reservó "${court.name}" para el ${payload.date} de ${payload.start_time.slice(0,5)} a ${payload.end_time.slice(0,5)}`,
+          '/court-owner');
+      }
       return data;
     },
     onSuccess: () => {
@@ -379,10 +396,20 @@ export function useJoinTournament() {
       }
       return data;
     },
-    onSuccess: (_, { tournamentId }) => {
+    onSuccess: async (_, { tournamentId }) => {
       qc.invalidateQueries({ queryKey: ['tournament', tournamentId] });
       qc.invalidateQueries({ queryKey: ['tournaments'] });
       toast.success('¡Inscripción exitosa!');
+      // Notificar al organizador
+      const uid = getUid();
+      const { data: t } = await supabase.from('tournaments')
+        .select('organizer_id, name').eq('id', tournamentId).single();
+      if (t?.organizer_id && t.organizer_id !== uid) {
+        await insertNotification(t.organizer_id, 'tournament',
+          'Nueva inscripción en tu torneo',
+          `Un participante se inscribió en "${t.name}"`,
+          '/organizer');
+      }
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -654,21 +681,76 @@ export function useCreateOrder() {
       if (iErr) throw new Error(iErr.message);
       return order;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['my_orders'] }),
+    onSuccess: async (order, payload) => {
+      qc.invalidateQueries({ queryKey: ['my_orders'] });
+      qc.invalidateQueries({ queryKey: ['vendor_orders'] });
+      toast.success('¡Pedido realizado!');
+      // Notificar a cada vendedor afectado
+      const productIds = payload.items.map(i => i.product_id);
+      const { data: products } = await supabase.from('products')
+        .select('vendor_id, name').in('id', productIds);
+      const vendorsSeen = new Set<string>();
+      for (const p of products ?? []) {
+        if (p.vendor_id && !vendorsSeen.has(p.vendor_id)) {
+          vendorsSeen.add(p.vendor_id);
+          await insertNotification(p.vendor_id, 'order',
+            'Nuevo pedido recibido',
+            `Tienes un nuevo pedido que incluye "${p.name}"`,
+            '/vendor');
+        }
+      }
+    },
     onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useVendorOrders() {
+  return useQuery({
+    queryKey: ['vendor_orders'],
+    queryFn: async () => {
+      const uid = getUid();
+      if (!uid) return [];
+      const { data: myProducts } = await supabase.from('products')
+        .select('id').eq('vendor_id', uid);
+      if (!myProducts?.length) return [];
+      const ids = myProducts.map(p => p.id);
+      const { data, error } = await supabase.from('order_items')
+        .select('*, orders:order_id (id, created_at, status, total, profiles:customer_id (name, email, avatar)), products:product_id (id, name, images, price)')
+        .in('product_id', ids)
+        .order('created_at', { ascending: false })
+        .limit(50);
+      if (error) { console.error('vendor_orders:', error.message); return []; }
+      return data ?? [];
+    },
   });
 }
 
 // ─── NOTIFICATIONS ────────────────────────────────────────────────────────────
 export function useNotifications() {
+  const qc = useQueryClient();
+  const uid = getUid();
+
+  useEffect(() => {
+    if (!uid) return;
+    const channel = supabase
+      .channel(`notifications:${uid}`)
+      .on('postgres_changes', {
+        event: 'INSERT', schema: 'public', table: 'notifications',
+        filter: `user_id=eq.${uid}`,
+      }, () => {
+        qc.invalidateQueries({ queryKey: ['notifications'] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [uid, qc]);
+
   return useQuery({
     queryKey: ['notifications'],
     queryFn: async () => {
-      const uid = getUid();
       if (!uid) return [];
       const { data, error } = await supabase.from('notifications')
         .select('*').eq('user_id', uid)
-        .order('created_at', { ascending: false }).limit(20);
+        .order('created_at', { ascending: false }).limit(50);
       if (error) { console.error('notifications:', error.message); return []; }
       return data ?? [];
     },

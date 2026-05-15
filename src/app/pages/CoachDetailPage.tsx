@@ -1,9 +1,12 @@
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, Star, Award, Clock, DollarSign, MapPin, Shield, Phone, Mail } from 'lucide-react';
+import { ChevronLeft, Star, Award, Clock, DollarSign, MapPin, Shield, Phone, Mail, Send } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { useCoach } from '../hooks/useSupabase';
+import { useAuthStore } from '../stores/authStore';
+import { supabase } from '../lib/supabase';
 import { formatCurrency } from '../lib/utils';
 import { ReviewSection } from '../components/shared/ReviewSection';
 import { toast } from 'sonner';
@@ -12,6 +15,35 @@ export function CoachDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: coach, isLoading } = useCoach(id!);
+  const { user, isAuthenticated } = useAuthStore();
+  const [showRequest, setShowRequest] = useState(false);
+  const [message, setMessage] = useState('');
+  const [sending, setSending] = useState(false);
+
+  async function handleRequest(e: React.FormEvent) {
+    e.preventDefault();
+    if (!user || !coach) return;
+    setSending(true);
+    try {
+      const coachUserId = coach.user_id ?? coach.profiles?.id;
+      if (!coachUserId) throw new Error('No se encontró el entrenador');
+      await supabase.from('notifications').insert({
+        user_id: coachUserId,
+        type: 'session_request',
+        title: 'Solicitud de sesión',
+        message: `${user.name} quiere contratar tus servicios${message ? `: "${message}"` : ''}. Contáctale: ${user.email}${user.phone ? ` · ${user.phone}` : ''}`,
+        link: '/coach',
+        read: false,
+      });
+      toast.success('Solicitud enviada al entrenador');
+      setShowRequest(false);
+      setMessage('');
+    } catch (e: any) {
+      toast.error(e.message ?? 'Error al enviar la solicitud');
+    } finally {
+      setSending(false);
+    }
+  }
 
   if (isLoading) return <LoadingSkeleton />;
   if (!coach) return <div className="p-8 text-center text-muted-foreground">Entrenador no encontrado</div>;
@@ -107,9 +139,30 @@ export function CoachDetailPage() {
                   <p className="text-sm text-muted-foreground">Tarifa por hora</p>
                   <p className="text-3xl font-bold text-primary">{formatCurrency(coach.hourly_rate)}</p>
                 </div>
-                <Button fullWidth size="lg" onClick={() => toast.info('Próximamente: reserva de sesiones')}>
-                  Contratar Entrenador
-                </Button>
+                {!showRequest ? (
+                  <Button fullWidth size="lg" onClick={() => {
+                    if (!isAuthenticated) { toast.error('Inicia sesión para contactar al entrenador'); return; }
+                    setShowRequest(true);
+                  }}>
+                    <Send className="w-4 h-4" /> Solicitar sesión
+                  </Button>
+                ) : (
+                  <form onSubmit={handleRequest} className="space-y-3">
+                    <textarea
+                      value={message}
+                      onChange={e => setMessage(e.target.value)}
+                      placeholder="Cuéntale qué necesitas (opcional)..."
+                      rows={3}
+                      className="w-full px-3 py-2 border border-input rounded-xl bg-background text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    />
+                    <div className="flex gap-2">
+                      <Button type="button" variant="outline" fullWidth onClick={() => setShowRequest(false)}>Cancelar</Button>
+                      <Button type="submit" fullWidth loading={sending}>
+                        <Send className="w-4 h-4" /> Enviar
+                      </Button>
+                    </div>
+                  </form>
+                )}
                 {profile.phone && (
                   <Button fullWidth variant="outline" onClick={() => window.open(`tel:${profile.phone}`)}>
                     <Phone className="w-4 h-4" /> Llamar

@@ -1,10 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { ArrowLeft, Save, Star, Clock, BookOpen, Award } from 'lucide-react';
+import { ArrowLeft, Save, Star, BookOpen, Award, Bell, User } from 'lucide-react';
 import { Button } from '../components/ui/Button';
+import { Badge } from '../components/ui/Badge';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
-import { useMyCoach, useUpsertCoach } from '../hooks/useSupabase';
+import { useMyCoach, useUpsertCoach, useNotifications, useMarkNotificationRead } from '../hooks/useSupabase';
+import { formatRelativeTime } from '../lib/utils';
+
+type Tab = 'profile' | 'requests';
 
 const SPECIALTIES = [
   'Fútbol','Tenis','Baloncesto','Natación','Ciclismo',
@@ -28,7 +32,13 @@ const EMPTY = {
 export function CoachDashboardPage() {
   const { data: coach, isLoading } = useMyCoach();
   const upsert = useUpsertCoach();
+  const { data: notifications = [] } = useNotifications();
+  const markRead = useMarkNotificationRead();
+  const [tab, setTab] = useState<Tab>('profile');
   const [form, setForm] = useState(EMPTY);
+
+  const requests = notifications.filter((n: any) => n.type === 'session_request');
+  const unreadRequests = requests.filter((n: any) => !n.read).length;
 
   useEffect(() => {
     if (coach) {
@@ -94,7 +104,48 @@ export function CoachDashboardPage() {
           )}
         </div>
 
-        <form onSubmit={handleSave} className="space-y-6">
+        {/* Tabs */}
+        <div className="flex gap-1 p-1 bg-secondary/50 rounded-xl mb-6 w-fit">
+          {([['profile', 'Mi perfil'], ['requests', `Solicitudes${unreadRequests > 0 ? ` (${unreadRequests})` : ''}`]] as [Tab, string][]).map(([id, label]) => (
+            <button key={id} onClick={() => setTab(id)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab === id ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {/* ── TAB: REQUESTS ── */}
+        {tab === 'requests' && (
+          <div className="space-y-3">
+            {requests.length === 0 ? (
+              <div className="text-center py-20">
+                <Bell className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+                <h3 className="text-xl font-semibold mb-2">Sin solicitudes aún</h3>
+                <p className="text-muted-foreground">Cuando un atleta quiera contratarte aparecerá aquí</p>
+              </div>
+            ) : requests.map((n: any) => (
+              <Card key={n.id} className={`p-4 cursor-pointer transition-colors ${!n.read ? 'border-primary/30 bg-primary/5' : ''}`}
+                onClick={() => !n.read && markRead.mutate(n.id)}>
+                <div className="flex items-start gap-3">
+                  <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                    <User className="w-4 h-4 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm font-semibold">{n.title}</p>
+                      {!n.read && <Badge variant="primary" size="sm">Nueva</Badge>}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{n.message}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{formatRelativeTime(n.created_at)}</p>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        )}
+
+        {/* ── TAB: PROFILE ── */}
+        {tab === 'profile' && <form onSubmit={handleSave} className="space-y-6">
 
           {/* Especialidades */}
           <Card>
@@ -187,7 +238,7 @@ export function CoachDashboardPage() {
             <Save className="w-4 h-4" />
             {coach ? 'Guardar cambios' : 'Publicar perfil de entrenador'}
           </Button>
-        </form>
+        </form>}
       </div>
     </div>
   );
