@@ -44,15 +44,25 @@ const ROLE_ACTIONS: Record<string, Array<{ label: string; to: string; icon: any;
   ],
 };
 
+const ROLE_LABELS: Record<string, string> = {
+  customer:    'Cliente',
+  vendor:      'Vendedor',
+  organizer:   'Organizador',
+  court_owner: 'Dueño de cancha',
+  coach:       'Entrenador',
+  admin:       'Admin',
+};
+
 export function DashboardPage() {
-  const { user } = useAuthStore();
+  const { user, activeRole, setActiveRole } = useAuthStore();
   const { data: stats } = useDashboardStats();
   const { data: orders = [], isLoading: loadingOrders } = useMyOrders();
   const { data: reservations = [] } = useMyReservations();
   const { data: notifications = [] } = useNotifications();
   const unread = notifications.filter((n: any) => !n.read).length;
 
-  const role = user?.role ?? 'customer';
+  const role = activeRole ?? user?.role ?? 'customer';
+  const userRoles = user?.roles ?? [role];
   const quickActions = ROLE_ACTIONS[role] ?? ROLE_ACTIONS.customer;
 
   const STATS = [
@@ -76,7 +86,25 @@ export function DashboardPage() {
               <p className="text-muted-foreground text-sm mt-0.5">
                 {new Date().toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
               </p>
-              <Badge variant="primary" size="sm" className="mt-2 capitalize">{role === 'court_owner' ? 'Dueño de cancha' : role === 'organizer' ? 'Organizador' : role}</Badge>
+              {userRoles.length > 1 ? (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {userRoles.map((r) => (
+                    <button
+                      key={r}
+                      onClick={() => setActiveRole(r)}
+                      className={`px-3 py-1 rounded-full text-xs font-medium transition-colors border ${
+                        r === role
+                          ? 'bg-primary text-primary-foreground border-primary'
+                          : 'bg-secondary text-muted-foreground border-border hover:border-primary hover:text-primary'
+                      }`}
+                    >
+                      {ROLE_LABELS[r] ?? r}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <Badge variant="primary" size="sm" className="mt-2">{ROLE_LABELS[role] ?? role}</Badge>
+              )}
             </div>
             {unread > 0 && (
               <Link to="/notifications">

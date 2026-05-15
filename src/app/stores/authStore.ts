@@ -7,11 +7,13 @@ interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  activeRole: UserRole;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name: string, role: UserRole) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (updates: Partial<User>) => void;
   loadSession: () => Promise<void>;
+  setActiveRole: (role: UserRole) => void;
 }
 
 function mapProfile(p: any): User {
@@ -54,6 +56,7 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       isAuthenticated: false,
       isLoading: false,
+      activeRole: 'customer' as UserRole,
 
       loadSession: async () => {
         try {
@@ -61,9 +64,11 @@ export const useAuthStore = create<AuthState>()(
           if (!session?.user) return;
           const { data: profile } = await supabase
             .from('profiles').select('*').eq('id', session.user.id).maybeSingle();
+          const loaded = profile ? mapProfile(profile) : mapAuthUser(session.user);
           set({
-            user: profile ? mapProfile(profile) : mapAuthUser(session.user),
+            user: loaded,
             isAuthenticated: true,
+            activeRole: get().activeRole in (loaded.roles ?? []) ? get().activeRole : loaded.roles[0] ?? loaded.role,
           });
         } catch (e) {
           console.error('loadSession:', e);
@@ -88,7 +93,7 @@ export const useAuthStore = create<AuthState>()(
 
           const user = profile ? mapProfile(profile) : mapAuthUser(data.user);
           console.log('Login OK, user:', user.id, user.email);
-          set({ user, isAuthenticated: true });
+          set({ user, isAuthenticated: true, activeRole: user.roles[0] ?? user.role });
         } finally {
           set({ isLoading: false });
         }
@@ -114,9 +119,11 @@ export const useAuthStore = create<AuthState>()(
           const { data: profile } = await supabase
             .from('profiles').select('*').eq('id', data.user.id).maybeSingle();
 
+          const registered = profile ? mapProfile(profile) : mapAuthUser(data.user);
           set({
-            user: profile ? mapProfile(profile) : mapAuthUser(data.user),
+            user: registered,
             isAuthenticated: true,
+            activeRole: registered.roles[0] ?? registered.role,
           });
         } finally {
           set({ isLoading: false });
@@ -125,17 +132,21 @@ export const useAuthStore = create<AuthState>()(
 
       logout: async () => {
         try { await supabase.auth.signOut(); } catch { /* ignore */ }
-        set({ user: null, isAuthenticated: false });
+        set({ user: null, isAuthenticated: false, activeRole: 'customer' });
       },
 
       updateProfile: (updates) => {
         const current = get().user;
         if (current) set({ user: { ...current, ...updates } });
       },
+
+      setActiveRole: (role) => {
+        set({ activeRole: role });
+      },
     }),
     {
       name: 'tolima-auth-v2',
-      partialize: (s) => ({ user: s.user, isAuthenticated: s.isAuthenticated }),
+      partialize: (s) => ({ user: s.user, isAuthenticated: s.isAuthenticated, activeRole: s.activeRole }),
     }
   )
 );
