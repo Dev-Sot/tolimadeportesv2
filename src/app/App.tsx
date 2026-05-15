@@ -21,6 +21,7 @@ import { NotificationsPage } from './pages/NotificationsPage';
 import { VendorDashboardPage } from './pages/VendorDashboardPage';
 import { OrganizerDashboardPage } from './pages/OrganizerDashboardPage';
 import { CourtOwnerDashboardPage } from './pages/CourtOwnerDashboardPage';
+import { CoachDashboardPage } from './pages/CoachDashboardPage';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { AboutPage } from './pages/AboutPage';
@@ -132,6 +133,7 @@ export default function App() {
             <Route path="/vendor"       element={<RoleRoute roles={['vendor','admin']}><Layout><VendorDashboardPage /></Layout></RoleRoute>} />
             <Route path="/organizer"    element={<RoleRoute roles={['organizer','admin']}><Layout><OrganizerDashboardPage /></Layout></RoleRoute>} />
             <Route path="/court-owner"  element={<RoleRoute roles={['court_owner','admin']}><Layout><CourtOwnerDashboardPage /></Layout></RoleRoute>} />
+            <Route path="/coach"        element={<RoleRoute roles={['coach','admin']}><Layout><CoachDashboardPage /></Layout></RoleRoute>} />
 
             {/* Static pages */}
             <Route path="/about"   element={<Layout><AboutPage /></Layout>} />

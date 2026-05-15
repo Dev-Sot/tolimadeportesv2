@@ -455,12 +455,12 @@ export function ProfilePage() {
                               <button
                                 disabled={savingRoles}
                                 onClick={() => handleToggleRole(value)}
-                                className={`relative w-10 h-6 rounded-full transition-colors flex-shrink-0 ${
-                                  active ? 'bg-primary' : 'bg-secondary'
+                                className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 overflow-hidden ${
+                                  active ? 'bg-primary' : 'bg-secondary border border-border'
                                 } disabled:opacity-50`}
                               >
-                                <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${
-                                  active ? 'translate-x-5' : 'translate-x-1'
+                                <span className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200 ${
+                                  active ? 'translate-x-5' : 'translate-x-0'
                                 }`} />
                               </button>
                             </div>

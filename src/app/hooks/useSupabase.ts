@@ -492,6 +492,51 @@ export function useCoach(id: string) {
   });
 }
 
+export function useMyCoach() {
+  return useQuery({
+    queryKey: ['my_coach'],
+    queryFn: async () => {
+      const uid = getUid();
+      if (!uid) return null;
+      const { data } = await supabase.from('coaches')
+        .select('*').eq('user_id', uid).maybeSingle();
+      return data ?? null;
+    },
+  });
+}
+
+export function useUpsertCoach() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: {
+      specialties: string[]; experience: string; certifications: string[];
+      bio: string; hourly_rate: number; availability: string;
+    }) => {
+      const uid = requireUid();
+      const { data: existing } = await supabase.from('coaches')
+        .select('id').eq('user_id', uid).maybeSingle();
+      if (existing) {
+        const { data, error } = await supabase.from('coaches')
+          .update(payload).eq('user_id', uid).select().single();
+        if (error) throw new Error(error.message);
+        return data;
+      } else {
+        const { data, error } = await supabase.from('coaches')
+          .insert({ ...payload, user_id: uid, rating: 0, review_count: 0, featured: false, is_active: true })
+          .select().single();
+        if (error) throw new Error(error.message);
+        return data;
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['coaches'] });
+      qc.invalidateQueries({ queryKey: ['my_coach'] });
+      toast.success('Perfil de entrenador guardado');
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
 // ─── REVIEWS ─────────────────────────────────────────────────────────────────
 export function useReviews(targetId: string, targetType: string) {
   return useQuery({

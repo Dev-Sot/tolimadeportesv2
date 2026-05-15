@@ -36,6 +36,12 @@ const ROLE_ACTIONS: Record<string, Array<{ label: string; to: string; icon: any;
     { label: 'Torneos', to: '/tournaments', icon: Trophy, color: 'text-accent' },
     { label: 'Comunidad', to: '/community', icon: Users, color: 'text-purple-500' },
   ],
+  coach: [
+    { label: 'Mi perfil',    to: '/coach',       icon: Star,      color: 'text-purple-500' },
+    { label: 'Entrenadores', to: '/coaches',      icon: Users,     color: 'text-primary' },
+    { label: 'Torneos',      to: '/tournaments',  icon: Trophy,    color: 'text-accent' },
+    { label: 'Comunidad',    to: '/community',    icon: Users,     color: 'text-blue-500' },
+  ],
   customer: [
     { label: 'Marketplace', to: '/marketplace', icon: ShoppingBag, color: 'text-primary' },
     { label: 'Torneos', to: '/tournaments', icon: Trophy, color: 'text-accent' },
@@ -118,22 +124,29 @@ export function DashboardPage() {
         </motion.div>
 
         {/* Role-specific CTA for vendors/organizers */}
-        {(role === 'vendor' || role === 'organizer' || role === 'court_owner') && (
+        {(role === 'vendor' || role === 'organizer' || role === 'court_owner' || role === 'coach') && (
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
             className="mb-8 p-5 bg-primary/5 border border-primary/20 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
               <p className="font-semibold">
-                {role === 'vendor' ? '¿Listo para vender?' : role === 'organizer' ? '¿Listo para organizar?' : '¿Listo para recibir reservas?'}
+                {role === 'vendor' ? '¿Listo para vender?' :
+                 role === 'organizer' ? '¿Listo para organizar?' :
+                 role === 'coach' ? '¿Listo para entrenar?' :
+                 '¿Listo para recibir reservas?'}
               </p>
               <p className="text-sm text-muted-foreground mt-0.5">
                 {role === 'vendor' ? 'Publica productos y llega a toda la comunidad deportiva del Tolima' :
                  role === 'organizer' ? 'Crea torneos y conecta con equipos de los 47 municipios del Tolima' :
+                 role === 'coach' ? 'Completa tu perfil y empieza a recibir solicitudes de atletas' :
                  'Registra tus canchas y empieza a recibir reservas digitales hoy'}
               </p>
             </div>
-            <Link to={role === 'vendor' ? '/vendor' : role === 'organizer' ? '/organizer' : '/court-owner'} className="shrink-0 w-full sm:w-auto">
+            <Link to={role === 'vendor' ? '/vendor' : role === 'organizer' ? '/organizer' : role === 'coach' ? '/coach' : '/court-owner'} className="shrink-0 w-full sm:w-auto">
               <Button>
-                {role === 'vendor' ? 'Gestionar productos' : role === 'organizer' ? 'Gestionar torneos' : 'Gestionar canchas'}
+                {role === 'vendor' ? 'Gestionar productos' :
+                 role === 'organizer' ? 'Gestionar torneos' :
+                 role === 'coach' ? 'Mi perfil de entrenador' :
+                 'Gestionar canchas'}
               </Button>
             </Link>
           </motion.div>
