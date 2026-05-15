@@ -40,6 +40,13 @@ export function CourtDetailPage() {
     );
   }
 
+  // Deshabilita un slot de fin si hay alguna hora ocupada entre inicio y ese fin
+  function isEndDisabled(end: string) {
+    return TIME_SLOTS.some(
+      (slot) => slot >= selectedStart && slot < end && isSlotOccupied(slot)
+    );
+  }
+
   function calcTotal() {
     if (!selectedStart || !selectedEnd || !court) return 0;
     const [sh, sm] = selectedStart.split(':').map(Number);
@@ -58,6 +65,8 @@ export function CourtDetailPage() {
       end_time: selectedEnd + ':00',
       total_price: calcTotal(),
     });
+    setSelectedStart('');
+    setSelectedEnd('');
   }
 
   if (isLoading) return <LoadingSkeleton />;
@@ -192,7 +201,13 @@ export function CourtDetailPage() {
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Hora de inicio</label>
+                  <label className="text-sm font-medium mb-2 flex items-center justify-between">
+                    Hora de inicio
+                    <span className="flex items-center gap-2 text-xs font-normal text-muted-foreground">
+                      <span className="w-3 h-3 rounded bg-destructive/70 inline-block" /> Ocupado
+                      <span className="w-3 h-3 rounded bg-primary inline-block" /> Seleccionado
+                    </span>
+                  </label>
                   <div className="grid grid-cols-4 gap-1">
                     {TIME_SLOTS.slice(0, -1).map((slot) => {
                       const occ = isSlotOccupied(slot);
@@ -201,7 +216,7 @@ export function CourtDetailPage() {
                         <button key={slot} disabled={occ}
                           onClick={() => { setSelectedStart(slot); setSelectedEnd(''); }}
                           className={`px-1 py-1.5 rounded text-xs font-medium transition-colors
-                            ${occ ? 'bg-destructive/10 text-destructive/50 cursor-not-allowed' :
+                            ${occ ? 'bg-destructive/70 text-white cursor-not-allowed' :
                               sel ? 'bg-primary text-primary-foreground' :
                               'bg-secondary hover:bg-secondary/80'}`}>
                           {slot}
@@ -217,12 +232,14 @@ export function CourtDetailPage() {
                     <div className="grid grid-cols-4 gap-1">
                       {TIME_SLOTS.filter((s) => s > selectedStart).map((slot) => {
                         const occ = isSlotOccupied(slot);
+                        const endDis = isEndDisabled(slot);
                         const sel = selectedEnd === slot;
+                        const disabled = occ || endDis;
                         return (
-                          <button key={slot} disabled={occ}
+                          <button key={slot} disabled={disabled}
                             onClick={() => setSelectedEnd(slot)}
                             className={`px-1 py-1.5 rounded text-xs font-medium transition-colors
-                              ${occ ? 'bg-destructive/10 text-destructive/50 cursor-not-allowed' :
+                              ${disabled ? 'bg-destructive/70 text-white cursor-not-allowed' :
                                 sel ? 'bg-primary text-primary-foreground' :
                                 'bg-secondary hover:bg-secondary/80'}`}>
                             {slot}
