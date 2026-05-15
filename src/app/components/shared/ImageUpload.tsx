@@ -19,7 +19,6 @@ interface CropArea {
 async function getCroppedBlob(imageSrc: string, pixelCrop: CropArea): Promise<Blob> {
   const img = await new Promise<HTMLImageElement>((resolve, reject) => {
     const i = new Image();
-    i.crossOrigin = 'anonymous';
     i.onload = () => resolve(i);
     i.onerror = reject;
     i.src = imageSrc;
