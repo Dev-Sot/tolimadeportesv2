@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { Plus, Trophy, Edit3, Trash2, Users, X, Calendar , ArrowLeft } from 'lucide-react';
+import { Plus, Trophy, Edit3, Trash2, Users, X, Calendar, ArrowLeft, DollarSign } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { Card } from '../components/ui/Card';
-import { useMyTournaments, useCreateTournament } from '../hooks/useSupabase';
+import { useMyTournaments, useCreateTournament, useUpdateTournament, useDeleteTournament } from '../hooks/useSupabase';
 import { formatCurrency, formatDate, formatRelativeTime } from '../lib/utils';
 import { toast } from 'sonner';
 
@@ -22,26 +22,46 @@ const STATUS_MAP: Record<string, any> = {
 export function OrganizerDashboardPage() {
   const { data: tournaments = [], isLoading } = useMyTournaments();
   const createTournament = useCreateTournament();
+  const updateTournament = useUpdateTournament();
+  const deleteTournament = useDeleteTournament();
   const [showForm, setShowForm] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(EMPTY);
+
+  function openCreate() { setForm(EMPTY); setEditId(null); setShowForm(true); }
+
+  function openEdit(t: any) {
+    setForm({
+      name: t.name, description: t.description ?? '', sport: t.sport,
+      location: t.location, start_date: t.start_date?.slice(0,10) ?? '',
+      end_date: t.end_date?.slice(0,10) ?? '',
+      registration_deadline: t.registration_deadline?.slice(0,10) ?? '',
+      max_participants: String(t.max_participants), entry_fee: String(t.entry_fee ?? 0),
+      prizes: (t.prizes ?? []).join('\n'), rules: t.rules ?? '',
+    });
+    setEditId(t.id); setShowForm(true);
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!form.name || !form.start_date || !form.end_date || !form.registration_deadline || !form.max_participants) {
       toast.error('Completa todos los campos obligatorios'); return;
     }
-    try {
-    await createTournament.mutateAsync({
+    const payload = {
       name: form.name, description: form.description, sport: form.sport, location: form.location,
       start_date: form.start_date, end_date: form.end_date, registration_deadline: form.registration_deadline,
       max_participants: parseInt(form.max_participants), entry_fee: parseFloat(form.entry_fee) || 0,
       prizes: form.prizes.split('\n').map(s => s.trim()).filter(Boolean),
       rules: form.rules || undefined,
-    });
-    setShowForm(false); setForm(EMPTY);
+    };
+    try {
+      if (editId) { await updateTournament.mutateAsync({ id: editId, ...payload }); }
+      else { await createTournament.mutateAsync(payload); }
+      setShowForm(false); setForm(EMPTY); setEditId(null);
     } catch (err: any) { console.error(err?.message); }
   }
 
+  const isPending = createTournament.isPending || updateTournament.isPending;
   const f = (k: string, v: string) => setForm(p => ({...p, [k]: v}));
 
   return (
@@ -55,7 +75,21 @@ export function OrganizerDashboardPage() {
           <h1 className="text-3xl font-bold">Mis Torneos</h1>
             <p className="text-muted-foreground mt-1">Crea y gestiona torneos deportivos</p>
           </div>
-          <Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> Nuevo torneo</Button>
+          <Button onClick={openCreate}><Plus className="w-4 h-4" /> Nuevo torneo</Button>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+          {[
+            { label: 'Total torneos',   value: tournaments.length,                                                     icon: Trophy },
+            { label: 'Activos/Próximos',value: tournaments.filter((t: any) => t.status === 'upcoming' || t.status === 'ongoing').length, icon: Calendar },
+            { label: 'Participantes',   value: tournaments.reduce((s: number, t: any) => s + (t.current_participants ?? 0), 0), icon: Users },
+          ].map(({ label, value, icon: Icon }) => (
+            <Card key={label} className="p-5">
+              <Icon className="w-5 h-5 text-primary mb-2" />
+              <p className="text-2xl font-bold">{value}</p>
+              <p className="text-xs text-muted-foreground">{label}</p>
+            </Card>
+          ))}
         </div>
 
         <AnimatePresence>
@@ -65,7 +99,7 @@ export function OrganizerDashboardPage() {
               <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }}
                 className="bg-card rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6">
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-bold">Crear Torneo</h2>
+                  <h2 className="text-xl font-bold">{editId ? 'Editar Torneo' : 'Crear Torneo'}</h2>
                   <button onClick={() => setShowForm(false)} className="p-2 rounded-lg hover:bg-secondary"><X className="w-5 h-5" /></button>
                 </div>
                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -129,8 +163,10 @@ export function OrganizerDashboardPage() {
                       className="w-full px-3 py-2 border border-input rounded-xl bg-background text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/40" />
                   </div>
                   <div className="flex gap-3 pt-2">
-                    <Button type="button" variant="outline" onClick={() => setShowForm(false)}>Cancelar</Button>
-                    <Button type="submit" fullWidth loading={createTournament.isPending}>Crear torneo</Button>
+                    <Button type="button" variant="outline" onClick={() => { setShowForm(false); setEditId(null); }}>Cancelar</Button>
+                    <Button type="submit" fullWidth loading={isPending}>
+                      {isPending ? (editId ? 'Guardando...' : 'Creando...') : (editId ? 'Guardar cambios' : 'Crear torneo')}
+                    </Button>
                   </div>
                 </form>
               </motion.div>
@@ -166,7 +202,19 @@ export function OrganizerDashboardPage() {
                         <span>{t.entry_fee > 0 ? formatCurrency(t.entry_fee) : 'Gratis'}</span>
                       </div>
                     </div>
-                    <Badge variant="outline" size="sm">{formatRelativeTime(t.created_at)}</Badge>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button onClick={() => openEdit(t)}
+                        className="p-2 rounded-lg hover:bg-secondary transition-colors"
+                        title="Editar torneo">
+                        <Edit3 className="w-4 h-4 text-muted-foreground" />
+                      </button>
+                      <button
+                        onClick={() => { if (confirm(`¿Cancelar "${t.name}"?`)) deleteTournament.mutate(t.id); }}
+                        className="p-2 rounded-lg hover:bg-destructive/10 transition-colors"
+                        title="Cancelar torneo">
+                        <Trash2 className="w-4 h-4 text-destructive" />
+                      </button>
+                    </div>
                   </div>
                 </Card>
               );

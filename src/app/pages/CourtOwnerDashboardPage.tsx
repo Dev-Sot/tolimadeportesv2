@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { Plus, MapPin, Edit3, X, Star, Clock, ArrowLeft } from 'lucide-react';
+import { Plus, MapPin, Edit3, Trash2, X, Star, Clock, ArrowLeft, DollarSign, Layers } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { Card } from '../components/ui/Card';
-import { useMyCourts, useCreateCourt, useUpdateCourt } from '../hooks/useSupabase';
+import { useMyCourts, useCreateCourt, useUpdateCourt, useDeleteCourt } from '../hooks/useSupabase';
 import { formatCurrency } from '../lib/utils';
 import { toast } from 'sonner';
 
@@ -17,6 +17,7 @@ export function CourtOwnerDashboardPage() {
   const { data: courts = [], isLoading } = useMyCourts();
   const createCourt = useCreateCourt();
   const updateCourt = useUpdateCourt();
+  const deleteCourt = useDeleteCourt();
 
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId]     = useState<string | null>(null);
@@ -89,6 +90,20 @@ export function CourtOwnerDashboardPage() {
             <p className="text-muted-foreground mt-1">Gestiona tus instalaciones deportivas</p>
           </div>
           <Button onClick={openCreate}><Plus className="w-4 h-4" /> Nueva cancha</Button>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+          {[
+            { label: 'Total canchas',    value: courts.length,                                                   icon: MapPin },
+            { label: 'Canchas activas',  value: courts.filter((c: any) => c.is_active !== false).length,         icon: Layers },
+            { label: 'Valor promedio/h', value: courts.length ? formatCurrency(courts.reduce((s: number, c: any) => s + (c.price_per_hour ?? 0), 0) / courts.length) : '$0', icon: DollarSign },
+          ].map(({ label, value, icon: Icon }) => (
+            <Card key={label} className="p-5">
+              <Icon className="w-5 h-5 text-primary mb-2" />
+              <p className="text-2xl font-bold">{value}</p>
+              <p className="text-xs text-muted-foreground">{label}</p>
+            </Card>
+          ))}
         </div>
 
         <AnimatePresence>
@@ -198,13 +213,19 @@ export function CourtOwnerDashboardPage() {
                         <span className="flex items-center gap-1"><Star className="w-3 h-3" />{c.rating ?? 0} ({c.review_count ?? 0})</span>
                       </div>
                     </div>
-                    <button
-                      onClick={() => openEdit(c)}
-                      className="p-2 rounded-lg hover:bg-secondary transition-colors shrink-0"
-                      title="Editar cancha"
-                    >
-                      <Edit3 className="w-4 h-4 text-muted-foreground" />
-                    </button>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button onClick={() => openEdit(c)}
+                        className="p-2 rounded-lg hover:bg-secondary transition-colors"
+                        title="Editar cancha">
+                        <Edit3 className="w-4 h-4 text-muted-foreground" />
+                      </button>
+                      <button
+                        onClick={() => { if (confirm(`¿Eliminar "${c.name}"?`)) deleteCourt.mutate(c.id); }}
+                        className="p-2 rounded-lg hover:bg-destructive/10 transition-colors"
+                        title="Eliminar cancha">
+                        <Trash2 className="w-4 h-4 text-destructive" />
+                      </button>
+                    </div>
                   </div>
                 </Card>
               </motion.div>

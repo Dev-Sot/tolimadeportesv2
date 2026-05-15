@@ -304,6 +304,22 @@ export function useUpdateCourt() {
   });
 }
 
+export function useDeleteCourt() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('courts').update({ is_active: false }).eq('id', id);
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['courts'] });
+      qc.invalidateQueries({ queryKey: ['my_courts'] });
+      toast.success('Cancha eliminada');
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
 export function useMyCourts() {
   return useQuery({
     queryKey: ['my_courts'],
@@ -390,6 +406,41 @@ export function useCreateTournament() {
       return data;
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['tournaments'] }); toast.success('Torneo creado'); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useUpdateTournament() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: any) => {
+      const { data, error } = await supabase.from('tournaments')
+        .update(updates).eq('id', id).select().single();
+      if (error) throw new Error(error.message);
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['tournaments'] });
+      qc.invalidateQueries({ queryKey: ['my_tournaments'] });
+      toast.success('Torneo actualizado');
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useDeleteTournament() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('tournaments')
+        .update({ status: 'cancelled' }).eq('id', id);
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['tournaments'] });
+      qc.invalidateQueries({ queryKey: ['my_tournaments'] });
+      toast.success('Torneo cancelado');
+    },
     onError: (e: Error) => toast.error(e.message),
   });
 }
