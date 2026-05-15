@@ -30,9 +30,9 @@ export function ProductDetailPage() {
   const toggleFavorite = useToggleFavorite();
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
-  const [added, setAdded] = useState(false);
   const isFavorite = favorites.some((f: any) => f.target_id === id && f.target_type === 'product');
-  const addItem = useCartStore((state) => state.addItem);
+  const { addItem, items } = useCartStore();
+  const inCart = items.some((i) => i.product.id === id);
 
   if (!product) {
     return (
@@ -46,11 +46,9 @@ export function ProductDetailPage() {
   }
 
   const handleAddToCart = () => {
-    if (added) return;
+    if (inCart) return;
     addItem(product, quantity);
-    toast.success(`${quantity} ${quantity === 1 ? 'producto agregado' : 'productos agregados'} al carrito`);
-    setAdded(true);
-    setTimeout(() => setAdded(false), 2000);
+    toast.success(`${product.name} agregado al carrito`);
   };
 
   const handleBuyNow = () => {
@@ -222,12 +220,12 @@ export function ProductDetailPage() {
             <div className="flex flex-col sm:flex-row gap-3 mb-8">
               <Button
                 onClick={handleAddToCart}
-                variant={added ? 'default' : 'outline'}
-                disabled={product.stock === 0 || added}
-                className={`flex-1 gap-2 transition-colors ${added ? 'bg-success text-white border-success hover:bg-success' : ''}`}
+                variant={inCart ? 'default' : 'outline'}
+                disabled={product.stock === 0 || inCart}
+                className={`flex-1 gap-2 transition-colors ${inCart ? 'bg-success text-white border-success hover:bg-success' : ''}`}
               >
-                {added ? <Check className="w-5 h-5" /> : <ShoppingCart className="w-5 h-5" />}
-                {added ? 'Agregado' : 'Agregar al Carrito'}
+                {inCart ? <Check className="w-5 h-5" /> : <ShoppingCart className="w-5 h-5" />}
+                {inCart ? 'Agregado' : 'Agregar al Carrito'}
               </Button>
               <Button
                 onClick={handleBuyNow}
