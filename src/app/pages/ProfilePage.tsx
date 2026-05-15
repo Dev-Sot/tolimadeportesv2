@@ -1,14 +1,16 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { User, Package, Calendar, Trophy, Heart, Bell, Settings, Edit3, Save, X, MapPin, Phone, Mail , ArrowLeft } from 'lucide-react';
+import { User, Package, Calendar, Trophy, Heart, Bell, Settings, Edit3, Save, X, MapPin, Phone, Mail, ArrowLeft, ShieldCheck } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { useAuthStore } from '../stores/authStore';
 import { useMyOrders, useMyReservations, useDashboardStats, useNotifications, useMarkNotificationRead, useUpdateProfile } from '../hooks/useSupabase';
 import { formatCurrency, formatDate, formatRelativeTime } from '../lib/utils';
+import { supabase } from '../lib/supabase';
 import { toast } from 'sonner';
+import type { UserRole } from '../types';
 
 const TABS = [
   { id: 'overview', label: 'Resumen', icon: User },
@@ -35,11 +37,20 @@ const RES_STATUS: Record<string, { label: string; variant: any }> = {
   completed: { label: 'Completada', variant: 'default' },
 };
 
+const ALL_ROLES: { value: UserRole; label: string; description: string }[] = [
+  { value: 'customer',    label: 'Cliente',          description: 'Compra productos y reserva canchas' },
+  { value: 'vendor',      label: 'Vendedor',         description: 'Publica y vende productos deportivos' },
+  { value: 'organizer',   label: 'Organizador',      description: 'Crea y gestiona torneos' },
+  { value: 'court_owner', label: 'Dueño de cancha',  description: 'Registra canchas y recibe reservas' },
+  { value: 'coach',       label: 'Entrenador',       description: 'Ofrece sesiones de entrenamiento' },
+];
+
 export function ProfilePage() {
-  const { user } = useAuthStore();
+  const { user, updateProfile: updateStoreProfile } = useAuthStore();
   const [activeTab, setActiveTab] = useState<Tab>('overview');
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ name: user?.name ?? '', phone: user?.phone ?? '', location: user?.location ?? '', bio: user?.bio ?? '' });
+  const [savingRoles, setSavingRoles] = useState(false);
 
   const { data: stats } = useDashboardStats();
   const { data: orders = [], isLoading: loadingOrders } = useMyOrders();
@@ -53,6 +64,31 @@ export function ProfilePage() {
   async function handleSave() {
     await updateProfile.mutateAsync(form);
     setEditing(false);
+  }
+
+  async function handleToggleRole(role: UserRole) {
+    if (!user) return;
+    const current = user.roles ?? [user.role];
+    const hasRole = current.includes(role);
+    if (hasRole && current.length === 1) {
+      toast.error('Debes tener al menos un rol activo');
+      return;
+    }
+    const updated = hasRole ? current.filter((r) => r !== role) : [...current, role];
+    setSavingRoles(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ roles: updated })
+        .eq('id', user.id);
+      if (error) throw new Error(error.message);
+      updateStoreProfile({ roles: updated });
+      toast.success(hasRole ? `Rol "${role}" eliminado` : `Rol "${role}" activado`);
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setSavingRoles(false);
+    }
   }
 
   // Back button is in the header section
@@ -77,7 +113,11 @@ export function ProfilePage() {
             <div className="flex-1">
               <div className="flex items-center gap-3 flex-wrap mb-1">
                 <h1 className="text-2xl font-bold">{user?.name}</h1>
-                <Badge variant="primary" size="sm">{user?.role}</Badge>
+                {(user?.roles ?? [user?.role]).map((r) => (
+                  <Badge key={r} variant="primary" size="sm">
+                    {ALL_ROLES.find((x) => x.value === r)?.label ?? r}
+                  </Badge>
+                ))}
               </div>
               <p className="text-sm text-muted-foreground flex items-center gap-1 mb-1">
                 <Mail className="w-3 h-3" />{user?.email}
@@ -376,6 +416,39 @@ export function ProfilePage() {
                           {user.bio || <span className="italic">Sin bio</span>}
                         </p>
                       )}
+                    </div>
+
+                    <div className="border-t border-border pt-4">
+                      <p className="text-sm font-medium flex items-center gap-2 mb-3">
+                        <ShieldCheck className="w-4 h-4 text-muted-foreground" /> Mis roles
+                      </p>
+                      <div className="space-y-2">
+                        {ALL_ROLES.map(({ value, label, description }) => {
+                          const active = (user?.roles ?? [user?.role]).includes(value);
+                          return (
+                            <div key={value}
+                              className={`flex items-center justify-between p-3 rounded-xl border transition-colors ${
+                                active ? 'border-primary/40 bg-primary/5' : 'border-border'
+                              }`}>
+                              <div>
+                                <p className="text-sm font-medium">{label}</p>
+                                <p className="text-xs text-muted-foreground">{description}</p>
+                              </div>
+                              <button
+                                disabled={savingRoles}
+                                onClick={() => handleToggleRole(value)}
+                                className={`relative w-10 h-6 rounded-full transition-colors flex-shrink-0 ${
+                                  active ? 'bg-primary' : 'bg-secondary'
+                                } disabled:opacity-50`}
+                              >
+                                <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${
+                                  active ? 'translate-x-5' : 'translate-x-1'
+                                }`} />
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
 
                     <div className="border-t border-border pt-4">
