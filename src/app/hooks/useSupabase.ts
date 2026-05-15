@@ -836,6 +836,24 @@ export function useUpdateReservationStatus() {
   });
 }
 
+export function useCancelReservation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('reservations')
+        .update({ status: 'cancelled' }).eq('id', id);
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['my_reservations'] });
+      qc.invalidateQueries({ queryKey: ['court_owner_reservations'] });
+      qc.invalidateQueries({ queryKey: ['court_reservations'] });
+      toast.success('Reserva cancelada');
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
 export function useMyReservations() {
   return useQuery({
     queryKey: ['my_reservations'],

@@ -7,7 +7,7 @@ import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { useAuthStore } from '../stores/authStore';
-import { useMyOrders, useMyReservations, useDashboardStats, useNotifications, useMarkNotificationRead, useUpdateProfile } from '../hooks/useSupabase';
+import { useMyOrders, useMyReservations, useDashboardStats, useNotifications, useMarkNotificationRead, useUpdateProfile, useCancelReservation } from '../hooks/useSupabase';
 import { formatCurrency, formatDate, formatRelativeTime } from '../lib/utils';
 import { supabase } from '../lib/supabase';
 import { toast } from 'sonner';
@@ -59,6 +59,7 @@ export function ProfilePage() {
   const { data: notifications = [] } = useNotifications();
   const markRead = useMarkNotificationRead();
   const updateProfile = useUpdateProfile();
+  const cancelReservation = useCancelReservation();
 
   const unread = notifications.filter((n: any) => !n.read).length;
 
@@ -305,9 +306,20 @@ export function ProfilePage() {
                                   <MapPin className="w-3 h-3" />{r.courts?.city}
                                 </p>
                               </div>
-                              <div className="text-right flex-shrink-0">
+                              <div className="text-right flex-shrink-0 space-y-1">
                                 <p className="font-semibold text-primary">{formatCurrency(r.total_price)}</p>
                                 <Badge variant={s.variant} size="sm">{s.label}</Badge>
+                                {(r.status === 'pending' || r.status === 'confirmed') && r.date >= new Date().toISOString().split('T')[0] && (
+                                  <button
+                                    onClick={() => {
+                                      if (confirm('¿Cancelar esta reserva?')) cancelReservation.mutate(r.id);
+                                    }}
+                                    disabled={cancelReservation.isPending}
+                                    className="flex items-center gap-1 text-xs text-destructive hover:underline disabled:opacity-50 mt-1"
+                                  >
+                                    <X className="w-3 h-3" /> Cancelar
+                                  </button>
+                                )}
                               </div>
                             </div>
                           );
