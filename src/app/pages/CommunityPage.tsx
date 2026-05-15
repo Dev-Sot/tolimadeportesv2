@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { motion } from 'motion/react';
-import { Heart, MessageCircle, Share2, Send, Users, TrendingUp, Hash, ChevronDown, ChevronUp } from 'lucide-react';
+import { Heart, MessageCircle, Share2, Send, Users, TrendingUp, Hash, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
@@ -85,19 +85,33 @@ function CommentSection({ postId, commentsCount }: { postId: string; commentsCou
             <p className="text-xs text-muted-foreground">Sé el primero en comentar</p>
           )}
           {comments.map((c: any) => (
-            <div key={c.id} className="flex items-start gap-2">
+            <div key={c.id} className="flex items-start gap-2 group">
               <img src={c.profiles?.avatar ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=${c.user_id}`}
-                alt="" className="w-7 h-7 rounded-full flex-shrink-0" />
+                alt="" className="w-7 h-7 rounded-full flex-shrink-0 object-cover" />
               <div className="bg-secondary/50 rounded-xl px-3 py-2 flex-1 min-w-0">
                 <p className="text-xs font-medium">{c.profiles?.name ?? 'Usuario'}</p>
                 <p className="text-xs text-muted-foreground mt-0.5">{c.content}</p>
               </div>
+              {user?.id === c.user_id && (
+                <button
+                  onClick={async () => {
+                    const { error } = await supabase.from('post_comments').delete().eq('id', c.id);
+                    if (error) { toast.error('No se pudo eliminar'); return; }
+                    setComments(p => p.filter(x => x.id !== c.id));
+                    qc.invalidateQueries({ queryKey: ['posts'] });
+                  }}
+                  className="p-1 rounded-lg hover:bg-destructive/10 text-destructive opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mt-1"
+                  title="Eliminar comentario"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
           ))}
           {isAuthenticated ? (
             <form onSubmit={handleSubmit} className="flex gap-2 mt-2">
               <img src={user?.avatar ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.email}`}
-                alt="" className="w-7 h-7 rounded-full flex-shrink-0" />
+                alt="" className="w-7 h-7 rounded-full flex-shrink-0 object-cover" />
               <input value={text} onChange={e => setText(e.target.value)}
                 placeholder="Escribe un comentario..."
                 className="flex-1 px-3 py-1.5 text-xs border border-input rounded-xl bg-background focus:outline-none focus:ring-2 focus:ring-primary/40" />
