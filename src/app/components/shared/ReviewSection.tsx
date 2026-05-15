@@ -16,17 +16,20 @@ export function ReviewSection({ targetId, targetType }: Props) {
   const { isAuthenticated } = useAuthStore();
   const { data: reviews = [], isLoading } = useReviews(targetId, targetType);
   const create = useCreateReview();
-  const [rating, setRating] = useState(5);
+  const [rating, setRating] = useState(3);
   const [comment, setComment] = useState('');
-  const [hover, setHover] = useState(0);
   const [showForm, setShowForm] = useState(false);
+
+  const RATING_LABELS: Record<number, string> = {
+    1: 'Muy malo', 2: 'Malo', 3: 'Regular', 4: 'Bueno', 5: 'Excelente',
+  };
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!comment.trim()) return;
     await create.mutateAsync({ target_id: targetId, target_type: targetType, rating, comment });
     setComment('');
-    setRating(5);
+    setRating(3);
     setShowForm(false);
   }
 
@@ -59,15 +62,17 @@ export function ReviewSection({ targetId, targetType }: Props) {
             onSubmit={handleSubmit}
             className="bg-secondary/30 rounded-lg p-4 space-y-3">
             <div>
-              <label className="text-sm font-medium mb-2 block">Calificación</label>
-              <div className="flex gap-1">
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-sm font-medium">Calificación</label>
+                <span className="text-sm text-accent font-medium">{RATING_LABELS[rating]}</span>
+              </div>
+              <div className="flex gap-1.5">
                 {[1,2,3,4,5].map((star) => (
-                  <button key={star} type="button"
-                    onMouseEnter={() => setHover(star)}
-                    onMouseLeave={() => setHover(0)}
-                    onClick={() => setRating(star)}>
-                    <Star className={`w-6 h-6 transition-colors
-                      ${(hover || rating) >= star ? 'fill-accent text-accent' : 'text-muted-foreground'}`} />
+                  <button key={star} type="button" onClick={() => setRating(star)}
+                    className="focus:outline-none">
+                    <Star className={`w-8 h-8 transition-colors ${
+                      rating >= star ? 'fill-accent text-accent' : 'text-muted-foreground/40 hover:text-muted-foreground'
+                    }`} />
                   </button>
                 ))}
               </div>

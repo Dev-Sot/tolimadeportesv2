@@ -80,7 +80,7 @@ export function ProductDetailPage() {
               className="relative mb-4 rounded-2xl overflow-hidden bg-secondary/20"
             >
               <img
-                src={product.images[selectedImage]}
+                src={product.images?.[selectedImage] ?? 'https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=800'}
                 alt={product.name}
                 className="w-full h-[240px] sm:h-[380px] md:h-[500px] object-cover"
               />

@@ -103,7 +103,7 @@ export function CourtsPage() {
                 <Card hover className="h-full overflow-hidden group">
                   <div className="relative overflow-hidden">
                     <img
-                      src={court.images[0]}
+                      src={court.images?.[0] ?? 'https://images.unsplash.com/photo-1529900748604-07564a03e7a6?w=800'}
                       alt={court.name}
                       className="w-full h-56 object-cover group-hover:scale-105 transition-transform duration-300"
                     />
@@ -134,10 +134,10 @@ export function CourtsPage() {
                     <div className="flex items-center gap-2 mb-3">
                       <div className="flex items-center">
                         <Star className="w-4 h-4 fill-accent text-accent" />
-                        <span className="text-sm ml-1 font-medium">{court.rating}</span>
+                        <span className="text-sm ml-1 font-medium">{(court.rating ?? 0).toFixed(1)}</span>
                       </div>
                       <span className="text-sm text-muted-foreground">
-                        ({court.review_count} reseñas)
+                        ({court.review_count ?? 0} reseñas)
                       </span>
                     </div>
 
