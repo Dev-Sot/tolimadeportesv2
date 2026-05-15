@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { Plus, Trophy, Edit3, Trash2, Users, X, Calendar, ArrowLeft, DollarSign } from 'lucide-react';
+import { Plus, Trophy, Edit3, Trash2, Users, X, Calendar, ArrowLeft, DollarSign, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { Card } from '../components/ui/Card';
@@ -63,6 +63,7 @@ export function OrganizerDashboardPage() {
 
   const isPending = createTournament.isPending || updateTournament.isPending;
   const f = (k: string, v: string) => setForm(p => ({...p, [k]: v}));
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   return (
     <div className="min-h-screen bg-background">
@@ -203,6 +204,11 @@ export function OrganizerDashboardPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
+                      <button onClick={() => setExpandedId(expandedId === t.id ? null : t.id)}
+                        className="p-2 rounded-lg hover:bg-secondary transition-colors"
+                        title="Ver participantes">
+                        {expandedId === t.id ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+                      </button>
                       <button onClick={() => openEdit(t)}
                         className="p-2 rounded-lg hover:bg-secondary transition-colors"
                         title="Editar torneo">
@@ -216,6 +222,32 @@ export function OrganizerDashboardPage() {
                       </button>
                     </div>
                   </div>
+
+                  {/* Participantes expandidos */}
+                  {expandedId === t.id && (
+                    <div className="mt-4 pt-4 border-t border-border">
+                      {!t.tournament_participants?.length ? (
+                        <p className="text-xs text-muted-foreground text-center py-2">Sin inscritos aún</p>
+                      ) : (
+                        <div className="space-y-2">
+                          <p className="text-xs font-medium text-muted-foreground mb-2">Participantes inscritos</p>
+                          {t.tournament_participants.map((p: any) => (
+                            <div key={p.id} className="flex items-center gap-3">
+                              <img src={p.profiles?.avatar ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.user_id}`}
+                                alt="" className="w-7 h-7 rounded-full object-cover shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-medium truncate">{p.profiles?.name ?? 'Participante'}</p>
+                                {p.team_name && <p className="text-xs text-muted-foreground truncate">{p.team_name}</p>}
+                              </div>
+                              <Badge variant={p.status === 'confirmed' ? 'success' : 'warning'} size="sm">
+                                {p.status === 'confirmed' ? 'Confirmado' : 'Inscrito'}
+                              </Badge>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </Card>
               );
             })}

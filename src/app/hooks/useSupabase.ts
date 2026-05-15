@@ -619,7 +619,7 @@ export function usePosts() {
 export function useCreatePost() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (payload: { content: string; sport?: string }) => {
+    mutationFn: async (payload: { content: string; sport?: string; images?: string[] }) => {
       const uid = requireUid();
       const { data, error } = await supabase.from('posts')
         .insert({ ...payload, user_id: uid }).select().single();
@@ -798,6 +798,41 @@ export function useDashboardStats() {
       }
       return data;
     },
+  });
+}
+
+export function useCourtOwnerReservations() {
+  return useQuery({
+    queryKey: ['court_owner_reservations'],
+    queryFn: async () => {
+      const uid = getUid();
+      if (!uid) return [];
+      const { data: courts } = await supabase.from('courts').select('id').eq('owner_id', uid);
+      if (!courts?.length) return [];
+      const ids = courts.map(c => c.id);
+      const { data, error } = await supabase.from('reservations')
+        .select('*, courts (id, name, sport), profiles:customer_id (id, name, email, phone, avatar)')
+        .in('court_id', ids)
+        .order('date', { ascending: false })
+        .limit(50);
+      if (error) { console.error('court_owner_res:', error.message); return []; }
+      return data ?? [];
+    },
+  });
+}
+
+export function useUpdateReservationStatus() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: 'confirmed' | 'cancelled' }) => {
+      const { error } = await supabase.from('reservations').update({ status }).eq('id', id);
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: (_, { status }) => {
+      qc.invalidateQueries({ queryKey: ['court_owner_reservations'] });
+      toast.success(status === 'confirmed' ? 'Reserva confirmada' : 'Reserva cancelada');
+    },
+    onError: (e: Error) => toast.error(e.message),
   });
 }
 

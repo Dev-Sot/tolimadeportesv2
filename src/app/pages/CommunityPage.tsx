@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { motion } from 'motion/react';
-import { Heart, MessageCircle, Share2, Send, Users, TrendingUp, Hash, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
+import { Heart, MessageCircle, Share2, Send, Users, TrendingUp, Hash, ChevronDown, ChevronUp, Trash2, ImageIcon } from 'lucide-react';
+import { ImageUpload } from '../components/shared/ImageUpload';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
@@ -215,14 +216,18 @@ export function CommunityPage() {
   const { user, isAuthenticated } = useAuthStore();
   const { data: posts = [], isLoading } = usePosts();
   const createPost = useCreatePost();
-  const [content, setContent] = useState('');
-  const [sport, setSport]     = useState('');
+  const [content, setContent]   = useState('');
+  const [sport, setSport]       = useState('');
+  const [images, setImages]     = useState<string[]>([]);
+  const [showImages, setShowImages] = useState(false);
 
   async function handlePost() {
     if (!content.trim()) return;
-    await createPost.mutateAsync({ content, sport: sport || undefined });
+    await createPost.mutateAsync({ content, sport: sport || undefined, images: images.length ? images : undefined });
     setContent('');
     setSport('');
+    setImages([]);
+    setShowImages(false);
   }
 
   return (
@@ -258,8 +263,17 @@ export function CommunityPage() {
                       onChange={e => setContent(e.target.value)}
                       placeholder="¿Qué está pasando en el deporte del Tolima?"
                       className="w-full px-3 py-2 border border-input rounded-xl bg-background text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/40 mb-3" />
+                    {showImages && (
+                      <div className="mb-3">
+                        <ImageUpload value={images} onChange={setImages} max={4} />
+                      </div>
+                    )}
                     <div className="flex items-center justify-between flex-wrap gap-2">
                       <div className="flex flex-wrap gap-1">
+                        <button onClick={() => setShowImages(p => !p)}
+                          className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors flex items-center gap-1 ${showImages ? 'bg-primary text-primary-foreground' : 'bg-secondary hover:bg-secondary/80 text-muted-foreground'}`}>
+                          <ImageIcon className="w-3 h-3" /> Foto
+                        </button>
                         {TOPICS.map(t => (
                           <button key={t} onClick={() => setSport(sport === t ? '' : t)}
                             className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${sport === t ? 'bg-primary text-primary-foreground' : 'bg-secondary hover:bg-secondary/80 text-muted-foreground'}`}>

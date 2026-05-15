@@ -1,14 +1,16 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { Plus, MapPin, Edit3, Trash2, X, Star, Clock, ArrowLeft, DollarSign, Layers } from 'lucide-react';
+import { Plus, MapPin, Edit3, Trash2, X, Star, Clock, ArrowLeft, DollarSign, Layers, Calendar, Check, Ban, User } from 'lucide-react';
 import { ImageUpload } from '../components/shared/ImageUpload';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
-import { Card } from '../components/ui/Card';
-import { useMyCourts, useCreateCourt, useUpdateCourt, useDeleteCourt } from '../hooks/useSupabase';
-import { formatCurrency } from '../lib/utils';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
+import { useMyCourts, useCreateCourt, useUpdateCourt, useDeleteCourt, useCourtOwnerReservations, useUpdateReservationStatus } from '../hooks/useSupabase';
+import { formatCurrency, formatDate } from '../lib/utils';
 import { toast } from 'sonner';
+
+type Tab = 'courts' | 'reservations';
 
 const SPORTS = ['Fútbol','Tenis','Baloncesto','Voleibol','Pádel','Squash'];
 const AMENITIES_LIST = ['Estacionamiento','Vestidores','Iluminación LED','Cafetería','Equipos disponibles','Techada','Gradas','Baños'];
@@ -16,13 +18,18 @@ const EMPTY = { name:'', description:'', sport:'Fútbol', address:'', city:'Ibag
 
 export function CourtOwnerDashboardPage() {
   const { data: courts = [], isLoading } = useMyCourts();
+  const { data: reservations = [], isLoading: loadingRes } = useCourtOwnerReservations();
   const createCourt = useCreateCourt();
   const updateCourt = useUpdateCourt();
   const deleteCourt = useDeleteCourt();
+  const updateStatus = useUpdateReservationStatus();
 
+  const [tab, setTab]           = useState<Tab>('courts');
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId]     = useState<string | null>(null);
   const [form, setForm]         = useState(EMPTY);
+
+  const pendingRes = reservations.filter((r: any) => r.status === 'pending').length;
 
   const f = (k: string, v: any) => setForm(p => ({...p, [k]: v}));
   const toggleAmenity = (a: string) => f('amenities', form.amenities.includes(a) ? form.amenities.filter(x => x !== a) : [...form.amenities, a]);
@@ -91,6 +98,16 @@ export function CourtOwnerDashboardPage() {
             <p className="text-muted-foreground mt-1">Gestiona tus instalaciones deportivas</p>
           </div>
           <Button onClick={openCreate}><Plus className="w-4 h-4" /> Nueva cancha</Button>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex gap-1 p-1 bg-secondary/50 rounded-xl mb-6 w-fit">
+          {([['courts', 'Mis canchas'], ['reservations', `Reservas${pendingRes > 0 ? ` (${pendingRes})` : ''}`]] as [Tab, string][]).map(([id, label]) => (
+            <button key={id} onClick={() => setTab(id)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab === id ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
+              {label}
+            </button>
+          ))}
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
@@ -186,16 +203,16 @@ export function CourtOwnerDashboardPage() {
           )}
         </AnimatePresence>
 
-        {isLoading ? (
+        {tab === 'courts' && isLoading ? (
           <div className="space-y-3">{[1,2].map(i => <div key={i} className="h-20 bg-secondary animate-pulse rounded-xl" />)}</div>
-        ) : courts.length === 0 ? (
+        ) : tab === 'courts' && courts.length === 0 ? (
           <div className="text-center py-20">
             <MapPin className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
             <h3 className="text-xl font-semibold mb-2">Aún no tienes canchas</h3>
             <p className="text-muted-foreground mb-6">Registra tu primera cancha y recibe reservas digitales</p>
             <Button onClick={openCreate}><Plus className="w-4 h-4" /> Registrar cancha</Button>
           </div>
-        ) : (
+        ) : tab === 'courts' ? (
           <div className="space-y-3">
             {courts.map((c: any) => (
               <motion.div key={c.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
@@ -235,7 +252,67 @@ export function CourtOwnerDashboardPage() {
               </motion.div>
             ))}
           </div>
+        ) : null}
 
+        {/* ── TAB: RESERVATIONS ── */}
+        {tab === 'reservations' && (
+          loadingRes ? (
+            <div className="space-y-3">{[1,2,3].map(i => <div key={i} className="h-20 bg-secondary animate-pulse rounded-xl" />)}</div>
+          ) : reservations.length === 0 ? (
+            <div className="text-center py-20">
+              <Calendar className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+              <h3 className="text-xl font-semibold mb-2">Sin reservas aún</h3>
+              <p className="text-muted-foreground">Cuando alguien reserve tus canchas aparecerá aquí</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {reservations.map((r: any) => {
+                const STATUS: Record<string, { label: string; variant: any }> = {
+                  pending:   { label: 'Pendiente',  variant: 'warning' },
+                  confirmed: { label: 'Confirmada', variant: 'success' },
+                  cancelled: { label: 'Cancelada',  variant: 'destructive' },
+                  completed: { label: 'Completada', variant: 'default' },
+                };
+                const s = STATUS[r.status] ?? STATUS.pending;
+                return (
+                  <Card key={r.id} className="p-4">
+                    <div className="flex items-start gap-4">
+                      <div className="w-10 h-10 rounded-full bg-secondary overflow-hidden shrink-0 flex items-center justify-center">
+                        {r.profiles?.avatar
+                          ? <img src={r.profiles.avatar} alt="" className="w-full h-full object-cover" />
+                          : <User className="w-5 h-5 text-muted-foreground" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                          <p className="font-semibold text-sm">{r.profiles?.name ?? 'Cliente'}</p>
+                          <Badge variant={s.variant} size="sm">{s.label}</Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {r.courts?.name} · {formatDate(r.date)} · {r.start_time?.slice(0,5)} – {r.end_time?.slice(0,5)}
+                        </p>
+                        <p className="text-xs text-primary font-semibold mt-0.5">{formatCurrency(r.total_price)}</p>
+                        {r.profiles?.phone && <p className="text-xs text-muted-foreground">📞 {r.profiles.phone}</p>}
+                      </div>
+                      {r.status === 'pending' && (
+                        <div className="flex gap-1 shrink-0">
+                          <button onClick={() => updateStatus.mutate({ id: r.id, status: 'confirmed' })}
+                            className="p-2 rounded-lg bg-success/10 hover:bg-success/20 text-success transition-colors"
+                            title="Confirmar">
+                            <Check className="w-4 h-4" />
+                          </button>
+                          <button onClick={() => updateStatus.mutate({ id: r.id, status: 'cancelled' })}
+                            className="p-2 rounded-lg bg-destructive/10 hover:bg-destructive/20 text-destructive transition-colors"
+                            title="Cancelar">
+                            <Ban className="w-4 h-4" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          )
         )}
       </div>
     </div>
