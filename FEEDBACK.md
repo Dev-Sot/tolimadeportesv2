@@ -17,120 +17,148 @@ Referencia: Airbnb (host/huésped), Rappi (usuario/repartidor).
 - `App.tsx`: `RoleRoute` usa `.some()` en lugar de comparación simple
 - `DashboardPage`: selector de perfil activo con botones pill
 - `Navbar`: switcher rápido en el dropdown del usuario
-- `ProfilePage`: toggles para activar/desactivar roles (fix CSS: `w-11 overflow-hidden left-1`)
+- `ProfilePage`: toggles para activar/desactivar roles
 - `RegisterPage`: checkmark en selección + aviso de múltiples roles
 
 **Bug resuelto — Toggle CSS:**
-El círculo blanco salía del área verde porque faltaba `overflow-hidden` en el botón
-y `left-1` fijo en el span. Fix: `w-11 h-6 overflow-hidden` + `absolute left-1 translate-x-0/5`.
+Círculo blanco salía del área verde. Faltaba `overflow-hidden` y `left-1` fijo.
+Fix: `w-11 h-6 overflow-hidden` + `absolute left-1 translate-x-0/5`.
 
 ---
 
 ## Seguridad — RLS en Supabase
-
-**Tablas protegidas:**
 
 | Tabla | SELECT | INSERT | UPDATE | DELETE |
 |---|---|---|---|---|
 | `products` | Público | vendor/admin | dueño O has_role('vendor') O admin | dueño/admin |
 | `courts` | Público | court_owner/admin | dueño/admin | dueño/admin |
 | `tournaments` | Público | organizer/admin | dueño/admin | dueño/admin |
-| `coaches` | Público | coach/admin | dueño/admin | dueño/admin |
+| `coaches` | Público | coach/admin | dueño O has_role('coach') O admin | dueño/admin |
 | `reservations` | Propio/admin | Propio | Propio/admin | — |
 | `orders` | Propio/admin | Propio | — | — |
 | `notifications` | Propio | — | Propio | — |
 | `posts` | Público | Autenticado | Propio/admin | Propio/admin |
 | `reviews` | Público | Autenticado | Propio/admin | Propio/admin |
 | `post_comments` | Público | Autenticado | — | Propio |
-| `storage.images` | Público | Autenticado | — | Propio (por carpeta user_id) |
+| `storage.images` | Público | Autenticado | — | Propio (carpeta user_id) |
 
-**Bug resuelto — UPDATE products atascado:**
-La política original solo permitía `vendor_id = auth.uid()`. Productos creados antes
-de RLS o sin vendor_id correcto bloqueaban el UPDATE silenciosamente. Fix: agregar
-`OR has_role('vendor')` a la política.
+**Bug resuelto — UPDATE products/courts atascado:**
+RLS bloqueaba silenciosamente. Fix: agregar `OR has_role('vendor/coach')` y simplificar
+hooks quitando `AbortController` (useUpdateProduct, useUpdateCourt, useProducts).
+
+**Bug resuelto — Trigger reseñas roto:**
+Error `missing FROM-clause entry for table "update_target_rating"`. Trigger mal escrito.
+Fix: Drop + reescribir `fn_update_target_rating()` con `COALESCE(NEW, OLD)` correcto.
 
 ---
 
 ## Dashboards por rol
 
-| Dashboard | Ruta | Estado |
+| Dashboard | Ruta | Contenido |
 |---|---|---|
-| Vendor | `/vendor` | Completo — CRUD productos + stats |
-| Organizer | `/organizer` | Completo — CRUD torneos + stats + edit/delete |
-| CourtOwner | `/court-owner` | Completo — CRUD canchas + stats + delete |
-| Coach | `/coach` | Nuevo — perfil con especialidades, tarifa, certificaciones |
+| Vendor | `/vendor` | Tabs: Productos (CRUD) · Pedidos recibidos · Estadísticas (Recharts) · Alerta stock bajo |
+| Organizer | `/organizer` | CRUD torneos + stats + lista de participantes expandible por torneo |
+| CourtOwner | `/court-owner` | Tabs: Canchas (CRUD) · Reservas recibidas (confirmar/cancelar) |
+| Coach | `/coach` | Tabs: Mi perfil (especialidades, tarifa, certs) · Solicitudes de sesión |
 
-**Hooks agregados a useSupabase.ts:**
-`useDeleteCourt`, `useUpdateTournament`, `useDeleteTournament`, `useMyCoach`, `useUpsertCoach`
+**Hooks agregados:**
+`useDeleteCourt`, `useUpdateTournament`, `useDeleteTournament`, `useMyCoach`,
+`useUpsertCoach`, `useCourtOwnerReservations`, `useUpdateReservationStatus`,
+`useCancelReservation`, `useVendorOrders`
 
-**Bug resuelto — hooks con abortSignal:**
-`useUpdateProduct` y `useUpdateCourt` usaban `AbortController` con timeout de 20s.
-Cuando RLS bloqueaba el UPDATE, `.single()` retornaba vacío y el `isPending` quedaba
-atascado. Fix: simplificar sin abortSignal, agregar validación de `!data`.
+---
+
+## Notificaciones
+
+- Supabase Realtime: suscripción a INSERT en `notifications` por `user_id`
+- Auto-notificación al dueño de cancha cuando alguien reserva
+- Auto-notificación al organizador cuando alguien se inscribe al torneo
+- Auto-notificación al vendor cuando alguien compra sus productos
+- Solicitudes de sesión de entrenador → notificación tipo `session_request`
 
 ---
 
 ## Subida de imágenes — Supabase Storage
 
-**Bucket:** `images` (público)
-**Ruta de archivos:** `{user.id}/{timestamp}-{random}.{ext}`
-
+**Bucket:** `images` (público)  
+**Ruta:** `{user.id}/{timestamp}-{random}.{ext}`  
 **Componente:** `src/app/components/shared/ImageUpload.tsx`
-- Modo múltiple: hasta 6 imágenes, preview en grid, fallback URL
-- Modo single: recortador circular con `react-easy-crop`, zoom slider, preview circular
+
+- Modo múltiple: hasta 6 imágenes, grid, fallback URL
+- Modo single (avatar): recortador circular con `react-easy-crop` + zoom slider
 
 **Bugs resueltos:**
-1. `setUploading(false)` fuera de `finally` → estado cargando infinito. Fix: mover a `finally`.
-2. `crossOrigin = 'anonymous'` en `getCroppedBlob` con blob URL local → canvas fallaba
-   silenciosamente. Fix: quitar `crossOrigin` para URLs locales del dispositivo.
+1. `setUploading(false)` fuera de `finally` → cargando infinito. Fix: mover a `finally`.
+2. `crossOrigin = 'anonymous'` en `getCroppedBlob` → canvas fallaba con blob URLs. Fix: quitar.
+3. `upsert: true` en Storage upload para evitar errores de duplicado.
 
 ---
 
 ## Carrito de compras
 
-**Decisión:** No requiere login para agregar productos. La cantidad se gestiona desde el carrito.
+**Decisión:** No requiere login. Cantidad se gestiona desde el carrito.
 
-**Cambios:**
-- `cartStore.addItem`: respeta stock con `Math.min(qty + new, stock)` — no permite exceder
-- `ProductCard` y `ProductDetailPage`: botón "Agregado" permanente basado en `items` del carrito
-  (no timeout), se resetea solo cuando el usuario elimina el producto del carrito
-- `CartPage`: botón `+` ya tenía `disabled={quantity >= stock}` — correcto
+- `cartStore.addItem`: `Math.min(qty + new, stock)` — nunca excede stock
+- Botón "Agregado" permanente basado en `items` del carrito, no en timeout
+- `CartPage`: `disabled={quantity >= stock}` en botón `+`
 
 ---
 
-## Login
+## Reservas de canchas
 
-**Bugs resueltos:**
-1. `<link rel="icon">` en JSX (inválido) → reemplazado por `<img src="/logo.png">`
-2. Botón "¿Olvidaste tu contraseña?" sin función → implementado con `supabase.auth.resetPasswordForEmail()`
-3. `showPassword` state existía pero nunca se usaba → botón ojo añadido al input
+**Calendario:**
+- Slots ocupados en rojo sólido (`bg-destructive/70 text-white`)
+- `isEndDisabled()`: impide seleccionar fin que "salte" sobre una hora ocupada
+- Tras confirmar reserva: `setSelectedStart('')` y `setSelectedEnd('')` limpian selección
+- Query `court_reservations` se invalida → slots rojos inmediatamente
+
+**Cancelación:** botón en Perfil → Reservas, solo en reservas pendientes/confirmadas con fecha futura.
+
+---
+
+## Reseñas y calificaciones
+
+- Default cambiado de 5 → **3 estrellas**
+- Estado `hover` eliminado — solo `onClick` cambia el rating
+- Etiqueta de texto: Muy malo / Malo / Regular / Bueno / Excelente
+- Estrellas más grandes (`w-8 h-8`) para facilitar el toque en móvil
 
 ---
 
 ## Comunidad
 
-**Bugs resueltos:**
-1. Avatar en formulario de comentar se estiraba → agregar `object-cover`
-2. Botón eliminar comentario usaba `opacity-0 group-hover:opacity-100` → no funcionaba en
-   móvil ni sin hover. Fix: botón siempre visible dentro del globo del comentario, solo
-   para comentarios propios (`user?.id === c.user_id`)
-3. `handleSubmit` tenía `return` dentro de `try` sin `finally` → `setSubmitting` quedaba
-   en `true`. Fix: mover lógica, agregar `finally`
-4. Dynamic import innecesario de `useAuthStore` dentro de `handleSubmit` → eliminado,
-   usar `user` del closure
+- Botón eliminar comentario siempre visible (no hover) dentro del globo, solo en propios
+- `handleSubmit`: `finally` agregado para que `setSubmitting` siempre se resetee
+- Dynamic import innecesario de `useAuthStore` eliminado — usar `user` del closure
+- Soporte de imágenes en publicaciones (hasta 4, via `ImageUpload`)
 
 ---
 
-## Navegación
+## Login
 
-- `ScrollToTop` agregado en `App.tsx` dentro de `BrowserRouter`
-- Redireccionamiento al login eliminado de todas las acciones — reemplazado por toast informativo
+- `<link rel="icon">` en JSX → reemplazado por `<img src="/logo.png">`
+- Botón "¿Olvidaste tu contraseña?" → `supabase.auth.resetPasswordForEmail()`
+- Toggle mostrar/ocultar contraseña implementado
 
 ---
 
-## Pendiente / Issues conocidos
+## Navegación y UX global
 
-- [ ] Política RLS para `coaches` INSERT — verificar que entrenadores puedan crear su perfil
-- [ ] URL de redirect para reset de contraseña necesita configurarse en Supabase Auth dashboard
-- [ ] El perfil de entrenador creado desde `/coach` debe aparecer en la lista `/coaches`
-- [ ] `post_comments` RLS: comentarios anteriores con `user_id = NULL` quedaron ocultos al activar RLS
+- `ScrollToTop` en `App.tsx` — siempre va al top al navegar
+- Redirects al login eliminados — reemplazados por toast informativo
+- Fallbacks de imagen en `CourtsPage` y `ProductDetailPage` para arrays vacíos
+- `(court.rating ?? 0).toFixed(1)` y `(court.review_count ?? 0)` — no muestra undefined
+
+---
+
+## Pendiente confirmado / Issues abiertos
+
+- [ ] `clearCart()` debe moverse a `onSuccess` en CheckoutPage (actualmente antes de confirmar)
+- [ ] Validar `canvas.getContext('2d')` no es null en ImageUpload
+- [ ] Deshabilitar botón Wompi mientras el widget carga
+- [ ] Manejar cancelación de Wompi con feedback al usuario
+- [ ] Resincronizar form del perfil cuando `user` cambia desde otra pestaña
+- [ ] Simplificar `useCreateProduct` (aún tiene AbortController de 20s)
+- [ ] Filtro de specialty de coaches debe ser server-side (actualmente client-side)
+- [ ] URL de redirect reset de contraseña en Supabase Auth dashboard
+- [ ] Ver AUDIT.md para lista completa de issues pendientes

@@ -10,171 +10,168 @@ Universidad de Ibagué · Ingeniería de Sistemas · 2026
 ### Completado
 
 #### Infraestructura
-- [x] Proyecto React 18 + TypeScript + Vite configurado
-- [x] Supabase conectado (Auth + DB + Storage + RLS)
-- [x] Zustand (authStore + cartStore) con persistencia localStorage
-- [x] TanStack React Query para data fetching
-- [x] Tailwind CSS v4 + Radix UI
+- [x] React 18 + TypeScript + Vite
+- [x] Supabase (Auth + DB + Storage + RLS en 11 tablas)
+- [x] Zustand (authStore + cartStore) con localStorage
+- [x] TanStack React Query + Supabase Realtime en notificaciones
+- [x] Tailwind CSS v4 + Radix UI + Lucide React
 - [x] Modo claro/oscuro
 - [x] ScrollToTop en cada navegación
 - [x] ErrorBoundary global
 
 #### Autenticación
 - [x] Registro con selección de rol inicial
-- [x] Login con toggle mostrar/ocultar contraseña
-- [x] Recuperación de contraseña por email (Supabase Auth)
-- [x] Sesión persistida en localStorage
-- [x] Sincronización automática con `onAuthStateChange`
-
-#### Sistema de roles múltiples
-- [x] Un usuario puede tener N roles simultáneos
-- [x] `activeRole` — perfil activo seleccionable
-- [x] Selector en Dashboard
-- [x] Switcher rápido en Navbar
+- [x] Login: toggle contraseña + recuperación por email
+- [x] Sesión persistida + sincronización `onAuthStateChange`
+- [x] Sistema de roles múltiples por cuenta
+- [x] `activeRole` seleccionable en Dashboard y Navbar
 - [x] Gestión de roles con toggles en Perfil
-- [x] `RoleRoute` verifica array de roles
-
-#### Seguridad
-- [x] RLS activado en 11 tablas
-- [x] Función `has_role()` en Supabase
-- [x] Storage bucket `images` con políticas por usuario
 
 #### Marketplace
-- [x] Listado de productos con filtros
-- [x] Detalle de producto
-- [x] Carrito con límite de stock
-- [x] Botón "Agregado" permanente por estado del carrito
-- [x] Checkout (ruta protegida)
+- [x] Listado con filtros (categoría, precio, orden) + vista grid/lista
+- [x] Detalle de producto con galería, selector de cantidad y stock
+- [x] Carrito: límite de stock, botón "Agregado" permanente, sin login requerido
+- [x] Checkout: 3 pasos (envío → pago → confirmación), Wompi + PSE + contraentrega
 
 #### Canchas
-- [x] Listado y detalle de canchas
-- [x] Reservas con selector de hora
-- [x] Dashboard dueño: CRUD + stats
+- [x] Listado con búsqueda y filtro por deporte
+- [x] Detalle: galería, amenidades, horarios disponibles
+- [x] Calendario de reserva: slots en rojo si ocupados, valida rangos
+- [x] Cancelar reserva propia desde Perfil
+- [x] Dashboard dueño: Tabs Canchas (CRUD) + Reservas (confirmar/cancelar)
 
 #### Torneos
-- [x] Listado y detalle de torneos
-- [x] Inscripción a torneos
-- [x] Dashboard organizador: CRUD + stats + edit/delete
+- [x] Listado y detalle con inscripción
+- [x] Dashboard organizador: CRUD + lista de participantes expandible
 
 #### Entrenadores
-- [x] Listado y detalle de entrenadores
-- [x] Dashboard entrenador: perfil con especialidades, tarifa, certificaciones
+- [x] Listado y detalle
+- [x] Solicitar sesión desde detalle → notificación al entrenador
+- [x] Dashboard entrenador: perfil (especialidades, tarifa, certs) + solicitudes recibidas
+
+#### Vendedor
+- [x] Dashboard: Tabs Productos (CRUD + imágenes) + Pedidos recibidos + Estadísticas
+- [x] Alerta de stock bajo (≤ 5 unidades)
+- [x] Gráfica de valor de catálogo por categoría (Recharts)
 
 #### Comunidad
-- [x] Feed de publicaciones
-- [x] Comentarios con eliminar propio
+- [x] Feed de publicaciones con imágenes (hasta 4)
+- [x] Comentarios: publicar, eliminar propio
 - [x] Likes con actualización optimista
 - [x] Filtro por tema deportivo
 
 #### Perfil de usuario
-- [x] Tabs: Resumen, Pedidos, Reservas, Notificaciones, Configuración
+- [x] Tabs: Resumen, Pedidos, Reservas (con cancelar), Notificaciones, Configuración
 - [x] Edición de datos personales
-- [x] Subida de foto con recortador circular
+- [x] Foto de perfil con recortador circular (react-easy-crop)
 - [x] Gestión de roles con toggles
+
+#### Notificaciones
+- [x] Centro de notificaciones con iconos por tipo
+- [x] Tiempo real con Supabase Realtime (INSERT listener)
+- [x] Auto-generación al reservar cancha, inscribir torneo, comprar productos
+- [x] Marcar leída / marcar todas
 
 #### Imágenes
 - [x] Subida desde dispositivo a Supabase Storage
-- [x] Recortador circular para foto de perfil (react-easy-crop)
-- [x] Previews en tiempo real
-- [x] Fallback por URL
+- [x] Recortador circular para avatar
+- [x] Fallback automático si no hay imagen
+
+#### Reseñas
+- [x] Sistema de reseñas para productos, canchas y entrenadores
+- [x] Trigger en Supabase actualiza rating automáticamente
+- [x] Estrellas por click (default 3), etiqueta de texto, sin hover
 
 ---
 
-## En progreso
+## Bugs de auditoría — Pendiente fix
 
-- [ ] Verificar que perfil de entrenador aparece en `/coaches` al publicarse
-- [ ] Configurar URL de redirect para reset de contraseña en Supabase dashboard
-- [ ] Políticas RLS para tabla `coaches` INSERT/UPDATE
+> Ver `AUDIT.md` para detalle completo
 
----
-
-## Próximas funcionalidades — Prioridad Alta
-
-### Checkout y pagos
-- [ ] Flujo de checkout completo (dirección, método de pago)
-- [ ] Integración pasarela de pago (PSE / Wompi para Colombia)
-- [ ] Confirmación de orden por email
-- [ ] Estado de orden en tiempo real
-
-### Notificaciones
-- [ ] Centro de notificaciones funcional
-- [ ] Notificaciones en tiempo real (Supabase Realtime)
-- [ ] Notificaciones push (PWA)
-
-### Vendedor
-- [ ] Gestión de órdenes recibidas en VendorDashboard
-- [ ] Estadísticas de ventas con gráficas (Recharts)
-- [ ] Control de inventario con alertas de stock bajo
-
-### Entrenador
-- [ ] Solicitudes de sesión de atletas
-- [ ] Calendario de disponibilidad
-- [ ] Sistema de reseñas para entrenadores
+- [ ] `clearCart()` mover a `onSuccess` en CheckoutPage (**alta prioridad**)
+- [ ] Validar canvas context en ImageUpload (`getContext('2d')`)
+- [ ] Deshabilitar botón Wompi mientras el widget carga
+- [ ] Manejar cancelación de Wompi con feedback
+- [ ] Resincronizar form de perfil cuando `user` cambia
+- [ ] Simplificar `useCreateProduct` (quitar AbortController)
+- [ ] Filtro specialty coaches → server-side
+- [ ] Configurar URL redirect reset contraseña en Supabase dashboard
 
 ---
 
-## Próximas funcionalidades — Prioridad Media
+## Próximo — Prioridad Alta
+
+### Fixes de auditoría críticos
+- [ ] Checkout: `clearCart` después de confirmar, no antes
+- [ ] Wompi: feedback de cancelación + deshabilitar botón mientras carga
+
+### Búsqueda global
+- [ ] Buscador unificado: productos, canchas, torneos, entrenadores
+- [ ] Resultados agrupados por categoría
+- [ ] Filtros por ubicación y precio
+
+### Checkout mejorado
+- [ ] Confirmación de orden por email (Supabase Edge Functions)
+- [ ] Estado de orden en tiempo real (Realtime)
+
+---
+
+## Próximo — Prioridad Media
 
 ### Canchas
-- [ ] Vista de reservas del día para dueños
-- [ ] Confirmación/rechazo de reservas
-- [ ] Disponibilidad por horario configurable
+- [ ] Disponibilidad por horario configurable desde el dashboard
 
 ### Torneos
-- [ ] Lista de participantes inscritos
 - [ ] Bracket/fixture del torneo
 - [ ] Resultados en tiempo real
 
 ### Comunidad
-- [ ] Compartir publicaciones
 - [ ] Menciones de usuarios (@usuario)
-- [ ] Subida de imágenes en publicaciones
+- [ ] Compartir publicación (copiar link)
 
-### Búsqueda global
-- [ ] Buscador unificado (productos, canchas, torneos, entrenadores)
-- [ ] Filtros avanzados por ubicación y precio
-- [ ] Resultados con mapa (Leaflet o Google Maps)
+### Técnico
+- [ ] Extraer `<OrderCard />` compartido (duplicado en Dashboard y Profile)
+- [ ] Unificar `mapProfile()` y `mapAuthUser()` en `mapUserData()`
+- [ ] Estandarizar variantes Badge/Button
 
 ---
 
-## Próximas funcionalidades — Prioridad Baja
+## Próximo — Prioridad Baja
 
 ### Técnico
 - [ ] Tests unitarios (Vitest)
 - [ ] Tests E2E (Playwright)
 - [ ] CI/CD con GitHub Actions
 - [ ] PWA (installable, offline básico)
-- [ ] SEO (React Helmet / meta tags)
+- [ ] SEO (meta tags dinámicos)
 
 ### UX / Diseño
-- [ ] Onboarding para nuevos usuarios (tour guiado)
+- [ ] Onboarding para nuevos usuarios
 - [ ] Página 404 personalizada
-- [ ] Skeleton loaders en todas las páginas
-- [ ] Animaciones de transición entre páginas
-- [ ] Soporte accesibilidad WCAG 2.1
+- [ ] Skeleton loaders uniformes en todas las páginas
+- [ ] Accesibilidad WCAG 2.1 (alt text, roles ARIA)
 
 ### Negocio
 - [ ] Dashboard admin con métricas globales
 - [ ] Sistema de comisiones para vendedores
 - [ ] Verificación de identidad para entrenadores
-- [ ] Blog con CMS
 - [ ] Landing page con SEO
 
 ---
 
-## Arquitectura actual
+## Arquitectura
 
 ```
 src/app/
-├── pages/          27 páginas
+├── pages/          28 páginas
 ├── components/
 │   ├── layout/     Navbar, Footer
 │   ├── ui/         Button, Card, Input, Badge, ThemeToggle
 │   ├── shared/     ErrorBoundary, ReviewSection, ImageUpload
 │   └── marketplace/ ProductCard
 ├── stores/         authStore (roles + activeRole), cartStore
-├── hooks/          useSupabase (40+ hooks), useTheme
-├── lib/            supabase client, utils, mockData
+├── hooks/          useSupabase (50+ hooks), useTheme
+├── lib/            supabase, utils, mockData
 └── types/          User, Product, Court, Tournament, Coach...
 ```
 
@@ -187,23 +184,36 @@ src/app/
 | Routing | React Router v7 |
 | Estado | Zustand |
 | Data | TanStack React Query |
+| Realtime | Supabase Realtime |
 | Backend | Supabase (Auth + DB + Storage + RLS) |
-| Recorte imágenes | react-easy-crop |
+| Recorte | react-easy-crop |
+| Gráficas | Recharts |
 | Animaciones | Motion |
-| Validación | Zod |
 | Toasts | Sonner |
 | Iconos | Lucide React |
 | Build | Vite 6 |
 
 ---
 
-## Notas de sesión
+## Sesiones
 
-**Mayo 2026**
-- Sistema de roles múltiples implementado completamente
-- RLS configurado en producción
-- Dashboards de los 4 roles con CRUD completo
-- Subida de imágenes desde dispositivo operativa
-- Recortador circular para avatar funcionando
-- Carrito con control de stock
+**Mayo 15, 2026**
+- Auditoría técnica completa (ver AUDIT.md)
+- Fixes: trigger reseñas, estrellas por click default 3, fallbacks imágenes
+- Notificaciones realtime + auto-generación en eventos clave
+- Vendor: pedidos recibidos + estadísticas Recharts + alerta stock
+- Coach: solicitudes de sesión + dashboard
+- CourtOwner: reservas recibidas + confirmar/cancelar
+- Organizer: lista de participantes expandible
+- Comunidad: imágenes en publicaciones
+- Cancelar reserva propia desde Perfil
+- Calendario: slots rojos después de reservar, validación de rangos
+
+**Mayo 14, 2026**
+- Sistema de roles múltiples completamente implementado
+- RLS en 11 tablas con función `has_role()`
+- Dashboards de 4 roles con CRUD completo
+- Subida de imágenes desde dispositivo + recortador circular
+- Carrito con límite de stock
 - Comunidad con comentarios eliminables
+- ScrollToTop, fixes de login, calendario de canchas
