@@ -77,19 +77,40 @@ export function ImageUpload({ value, onChange, max = 5, single = false }: Props)
     <div className="space-y-3">
       {/* Previews */}
       {value.length > 0 && (
-        <div className={`grid gap-2 ${single ? '' : 'grid-cols-3 sm:grid-cols-4'}`}>
+        <div className={single ? 'flex items-center gap-4' : 'grid grid-cols-3 sm:grid-cols-4 gap-2'}>
           {value.map((url) => (
-            <div key={url} className="relative group aspect-square rounded-xl overflow-hidden border border-border bg-secondary">
-              <img src={url} alt="" className="w-full h-full object-cover" />
-              <button
-                type="button"
-                onClick={() => remove(url)}
-                className="absolute top-1 right-1 w-6 h-6 bg-black/60 hover:bg-destructive rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                <X className="w-3 h-3 text-white" />
-              </button>
+            <div key={url} className={`relative group ${single ? 'shrink-0' : 'aspect-square rounded-xl overflow-hidden border border-border bg-secondary'}`}>
+              {single ? (
+                <>
+                  <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-primary/20 bg-secondary">
+                    <img src={url} alt="" className="w-full h-full object-cover" />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => remove(url)}
+                    className="absolute -top-1 -right-1 w-6 h-6 bg-destructive rounded-full flex items-center justify-center shadow"
+                  >
+                    <X className="w-3 h-3 text-white" />
+                  </button>
+                  <p className="sr-only">Vista previa circular</p>
+                </>
+              ) : (
+                <>
+                  <img src={url} alt="" className="w-full h-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => remove(url)}
+                    className="absolute top-1 right-1 w-6 h-6 bg-black/60 hover:bg-destructive rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <X className="w-3 h-3 text-white" />
+                  </button>
+                </>
+              )}
             </div>
           ))}
+          {single && value.length > 0 && (
+            <p className="text-xs text-muted-foreground">Así se verá tu foto de perfil</p>
+          )}
         </div>
       )}
 
