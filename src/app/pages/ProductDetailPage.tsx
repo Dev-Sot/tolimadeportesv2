@@ -19,6 +19,7 @@ import { Card } from '../components/ui/Card';
 import { useProduct, useProducts, useToggleFavorite, useFavorites } from '../hooks/useSupabase';
 import { formatCurrency } from '../lib/utils';
 import { useCartStore } from '../stores/cartStore';
+import { useAuthStore } from '../stores/authStore';
 import { toast } from 'sonner';
 
 export function ProductDetailPage() {
@@ -32,6 +33,7 @@ export function ProductDetailPage() {
   const [quantity, setQuantity] = useState(1);
   const isFavorite = favorites.some((f: any) => f.target_id === id && f.target_type === 'product');
   const addItem = useCartStore((state) => state.addItem);
+  const { isAuthenticated } = useAuthStore();
 
   if (!product) {
     return (
@@ -45,11 +47,21 @@ export function ProductDetailPage() {
   }
 
   const handleAddToCart = () => {
+    if (!isAuthenticated) {
+      toast.error('Debes iniciar sesión para agregar productos al carrito');
+      navigate('/login');
+      return;
+    }
     addItem(product, quantity);
     toast.success(`${quantity} ${quantity === 1 ? 'producto agregado' : 'productos agregados'} al carrito`);
   };
 
   const handleBuyNow = () => {
+    if (!isAuthenticated) {
+      toast.error('Debes iniciar sesión para comprar');
+      navigate('/login');
+      return;
+    }
     addItem(product, quantity);
     navigate('/cart');
   };

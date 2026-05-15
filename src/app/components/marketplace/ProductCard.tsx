@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { ShoppingCart, Heart, Star, Eye } from 'lucide-react';
+import { ShoppingCart, Heart, Star } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
 import { useCartStore } from '../../stores/cartStore';
+import { useAuthStore } from '../../stores/authStore';
 import { formatCurrency } from '../../lib/utils';
 import type { Product } from '../../types';
 import { toast } from 'sonner';
@@ -16,6 +17,8 @@ interface Props {
 
 export function ProductCard({ product, viewMode = 'grid' }: Props) {
   const { addItem } = useCartStore();
+  const { isAuthenticated } = useAuthStore();
+  const navigate = useNavigate();
   const [isFav, setIsFav] = useState(false);
   const [imgError, setImgError] = useState(false);
 
@@ -26,6 +29,11 @@ export function ProductCard({ product, viewMode = 'grid' }: Props) {
   function handleAddToCart(e: React.MouseEvent<HTMLButtonElement>) {
     e.preventDefault();
     e.stopPropagation();
+    if (!isAuthenticated) {
+      toast.error('Debes iniciar sesión para agregar productos al carrito');
+      navigate('/login');
+      return;
+    }
     addItem(product);
     toast.success(`${product.name} agregado al carrito`);
   }
