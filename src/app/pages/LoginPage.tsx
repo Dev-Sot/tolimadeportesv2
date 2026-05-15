@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { Mail, Lock, Trophy, AlertCircle, ArrowLeft } from 'lucide-react';
+import { Mail, Lock, Trophy, AlertCircle, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { useAuthStore } from '../stores/authStore';
+import { supabase } from '../lib/supabase';
+import { toast } from 'sonner';
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -13,6 +15,23 @@ export function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [resetting, setResetting] = useState(false);
+
+  async function handleForgotPassword() {
+    if (!email) { toast.error('Ingresa tu correo primero'); return; }
+    setResetting(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw new Error(error.message);
+      toast.success('Revisa tu correo para restablecer la contraseña');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Error al enviar el correo');
+    } finally {
+      setResetting(false);
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -71,9 +90,7 @@ export function LoginPage() {
 
           {/* Mobile logo */}
           <div className="flex items-center gap-2 lg:hidden mb-8">
-            <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center">
-              <Trophy className="w-5 h-5 text-white" />
-            </div>
+            <img src="/logo.png" alt="Tolima Deportes" className="h-8 w-auto object-contain" />
             <span className="font-bold text-xl">Tolima Deportes</span>
           </div>
 
@@ -121,21 +138,32 @@ export function LoginPage() {
                 <label className="text-sm font-medium">Contraseña</label>
                 <button
                   type="button"
-                  className="text-xs text-primary hover:underline"
-                  onClick={() => {/* TODO: implement password reset via Supabase */}}
+                  disabled={resetting}
+                  className="text-xs text-primary hover:underline disabled:opacity-50"
+                  onClick={handleForgotPassword}
                 >
-                  ¿Olvidaste tu contraseña?
+                  {resetting ? 'Enviando...' : '¿Olvidaste tu contraseña?'}
                 </button>
               </div>
-              <Input
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                placeholder="••••••••"
-                onChange={(e) => setPassword(e.target.value)}
-                icon={<Lock className="w-4 h-4" />}
-                required
-                autoComplete="current-password"
-              />
+              <div className="relative">
+                <Input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  placeholder="••••••••"
+                  onChange={(e) => setPassword(e.target.value)}
+                  icon={<Lock className="w-4 h-4" />}
+                  required
+                  autoComplete="current-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
 
             <Button
