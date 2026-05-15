@@ -46,16 +46,12 @@ function CommentSection({ postId, commentsCount }: { postId: string; commentsCou
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!isAuthenticated || !text.trim()) return;
+    if (!isAuthenticated || !text.trim() || !user) return;
     setSubmitting(true);
     try {
-      // Get uid from store - no network call needed
-      const { useAuthStore } = await import('../stores/authStore');
-      const uid = useAuthStore.getState().user?.id;
-      if (!uid) { toast.error('Debes iniciar sesión'); return; }
       const { data, error } = await supabase
         .from('post_comments')
-        .insert({ post_id: postId, user_id: uid, content: text.trim() })
+        .insert({ post_id: postId, user_id: user.id, content: text.trim() })
         .select('*, profiles:user_id (id, name, avatar)')
         .single();
       if (error) throw new Error(error.message);
