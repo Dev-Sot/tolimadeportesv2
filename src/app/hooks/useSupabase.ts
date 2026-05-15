@@ -157,16 +157,15 @@ export function useUpdateProduct() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, ...updates }: any) => {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 20000);
-      try {
-        const { data, error } = await supabase.from('products')
-          .update(updates).eq('id', id).abortSignal(controller.signal).select().single();
-        if (error) throw new Error(error.message);
-        return data;
-      } finally {
-        clearTimeout(timer);
-      }
+      const { data, error } = await supabase
+        .from('products')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+      if (error) throw new Error(error.message);
+      if (!data) throw new Error('No se pudo actualizar el producto. Verifica tus permisos.');
+      return data;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['products'] });
@@ -284,16 +283,15 @@ export function useUpdateCourt() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, ...updates }: any) => {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 20000);
-      try {
-        const { data, error } = await supabase.from('courts')
-          .update(updates).eq('id', id).abortSignal(controller.signal).select().single();
-        if (error) throw new Error(error.message);
-        return data;
-      } finally {
-        clearTimeout(timer);
-      }
+      const { data, error } = await supabase
+        .from('courts')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+      if (error) throw new Error(error.message);
+      if (!data) throw new Error('No se pudo actualizar la cancha. Verifica tus permisos.');
+      return data;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['courts'] });
