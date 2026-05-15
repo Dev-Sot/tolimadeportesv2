@@ -6,6 +6,7 @@ import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { useTournament, useJoinTournament } from '../hooks/useSupabase';
+import { toast } from 'sonner';
 import { useAuthStore } from '../stores/authStore';
 import { formatCurrency, formatDate } from '../lib/utils';
 
@@ -198,7 +199,7 @@ export function TournamentDetailPage() {
                 ) : (
                   <Button fullWidth size="lg"
                     disabled={!canJoin}
-                    onClick={() => { if (!isAuthenticated) navigate('/login'); else setShowJoinForm(true); }}>
+                    onClick={() => { if (!isAuthenticated) { toast.error('Debes iniciar sesión para inscribirte'); return; } setShowJoinForm(true); }}>
                     <Trophy className="w-4 h-4" />
                     {!isAuthenticated ? 'Inicia sesión para inscribirte' :
                       isFull ? 'Torneo lleno' :

@@ -6,6 +6,7 @@ import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { useCourt, useCourtReservations, useCreateReservation, useReviews } from '../hooks/useSupabase';
+import { toast } from 'sonner';
 import { useAuthStore } from '../stores/authStore';
 import { formatCurrency, formatDate } from '../lib/utils';
 import { ReviewSection } from '../components/shared/ReviewSection';
@@ -48,7 +49,7 @@ export function CourtDetailPage() {
   }
 
   async function handleReserve() {
-    if (!isAuthenticated) { navigate('/login'); return; }
+    if (!isAuthenticated) { toast.error('Debes iniciar sesión para reservar una cancha'); return; }
     if (!selectedStart || !selectedEnd) return;
     await createReservation.mutateAsync({
       court_id: id!,
