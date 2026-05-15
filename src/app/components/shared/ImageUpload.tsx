@@ -31,33 +31,42 @@ export function ImageUpload({ value, onChange, max = 5, single = false }: Props)
     setUploading(true);
     const uploaded: string[] = [];
 
-    for (const file of allowed) {
-      if (!file.type.startsWith('image/')) {
-        toast.error(`"${file.name}" no es una imagen válida`);
-        continue;
+    try {
+      for (const file of allowed) {
+        if (!file.type.startsWith('image/')) {
+          toast.error(`"${file.name}" no es una imagen válida`);
+          continue;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+          toast.error(`"${file.name}" supera los 5 MB`);
+          continue;
+        }
+
+        const ext  = file.name.split('.').pop() ?? 'jpg';
+        const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+
+        const { error } = await supabase.storage.from('images').upload(path, file, { upsert: true });
+        if (error) {
+          console.error('Storage upload error:', error.message);
+          toast.error(`No se pudo subir "${file.name}": ${error.message}`);
+          continue;
+        }
+
+        const { data } = supabase.storage.from('images').getPublicUrl(path);
+        uploaded.push(data.publicUrl);
       }
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error(`"${file.name}" supera los 5 MB`);
-        continue;
+
+      if (uploaded.length > 0) {
+        onChange(single ? uploaded : [...value, ...uploaded]);
+        toast.success(`${uploaded.length} imagen${uploaded.length !== 1 ? 'es' : ''} subida${uploaded.length !== 1 ? 's' : ''}`);
       }
-
-      const ext  = file.name.split('.').pop();
-      const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-
-      const { error } = await supabase.storage.from('images').upload(path, file, { upsert: false });
-      if (error) { toast.error(`Error subiendo ${file.name}`); continue; }
-
-      const { data } = supabase.storage.from('images').getPublicUrl(path);
-      uploaded.push(data.publicUrl);
+    } catch (e: any) {
+      console.error('ImageUpload error:', e);
+      toast.error('Error inesperado al subir la imagen');
+    } finally {
+      setUploading(false);
+      if (inputRef.current) inputRef.current.value = '';
     }
-
-    if (uploaded.length > 0) {
-      onChange(single ? uploaded : [...value, ...uploaded]);
-      toast.success(`${uploaded.length} imagen${uploaded.length !== 1 ? 'es' : ''} subida${uploaded.length !== 1 ? 's' : ''}`);
-    }
-
-    setUploading(false);
-    if (inputRef.current) inputRef.current.value = '';
   }
 
   function remove(url: string) {
