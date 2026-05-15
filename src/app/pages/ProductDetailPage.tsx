@@ -19,7 +19,6 @@ import { Card } from '../components/ui/Card';
 import { useProduct, useProducts, useToggleFavorite, useFavorites } from '../hooks/useSupabase';
 import { formatCurrency } from '../lib/utils';
 import { useCartStore } from '../stores/cartStore';
-import { useAuthStore } from '../stores/authStore';
 import { toast } from 'sonner';
 
 export function ProductDetailPage() {
@@ -31,9 +30,9 @@ export function ProductDetailPage() {
   const toggleFavorite = useToggleFavorite();
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
+  const [added, setAdded] = useState(false);
   const isFavorite = favorites.some((f: any) => f.target_id === id && f.target_type === 'product');
   const addItem = useCartStore((state) => state.addItem);
-  const { isAuthenticated } = useAuthStore();
 
   if (!product) {
     return (
@@ -47,21 +46,14 @@ export function ProductDetailPage() {
   }
 
   const handleAddToCart = () => {
-    if (!isAuthenticated) {
-      toast.error('Debes iniciar sesión para agregar productos al carrito');
-      navigate('/login');
-      return;
-    }
+    if (added) return;
     addItem(product, quantity);
     toast.success(`${quantity} ${quantity === 1 ? 'producto agregado' : 'productos agregados'} al carrito`);
+    setAdded(true);
+    setTimeout(() => setAdded(false), 2000);
   };
 
   const handleBuyNow = () => {
-    if (!isAuthenticated) {
-      toast.error('Debes iniciar sesión para comprar');
-      navigate('/login');
-      return;
-    }
     addItem(product, quantity);
     navigate('/cart');
   };
@@ -195,7 +187,12 @@ export function ProductDetailPage() {
             </div>
 
             <div className="mb-6">
-              <label className="block text-sm font-medium mb-2">Cantidad</label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-sm font-medium">Cantidad</label>
+                <span className="text-xs text-muted-foreground">
+                  {product.stock > 0 ? `${product.stock} disponibles` : 'Sin stock'}
+                </span>
+              </div>
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => setQuantity(Math.max(1, quantity - 1))}
@@ -225,12 +222,12 @@ export function ProductDetailPage() {
             <div className="flex flex-col sm:flex-row gap-3 mb-8">
               <Button
                 onClick={handleAddToCart}
-                variant="outline"
-                disabled={product.stock === 0}
-                className="flex-1 gap-2"
+                variant={added ? 'default' : 'outline'}
+                disabled={product.stock === 0 || added}
+                className={`flex-1 gap-2 transition-colors ${added ? 'bg-success text-white border-success hover:bg-success' : ''}`}
               >
-                <ShoppingCart className="w-5 h-5" />
-                Agregar al Carrito
+                {added ? <Check className="w-5 h-5" /> : <ShoppingCart className="w-5 h-5" />}
+                {added ? 'Agregado' : 'Agregar al Carrito'}
               </Button>
               <Button
                 onClick={handleBuyNow}

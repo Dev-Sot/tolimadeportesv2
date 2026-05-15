@@ -1,11 +1,9 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { ShoppingCart, Heart, Star } from 'lucide-react';
-import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
 import { useCartStore } from '../../stores/cartStore';
-import { useAuthStore } from '../../stores/authStore';
 import { formatCurrency } from '../../lib/utils';
 import type { Product } from '../../types';
 import { toast } from 'sonner';
@@ -17,10 +15,9 @@ interface Props {
 
 export function ProductCard({ product, viewMode = 'grid' }: Props) {
   const { addItem } = useCartStore();
-  const { isAuthenticated } = useAuthStore();
-  const navigate = useNavigate();
   const [isFav, setIsFav] = useState(false);
   const [imgError, setImgError] = useState(false);
+  const [added, setAdded] = useState(false);
 
   const reviewCount = product.review_count ?? product.reviewCount ?? 0;
   const vendorName  = product.profiles?.name ?? product.vendor?.name ?? 'Vendedor';
@@ -29,13 +26,11 @@ export function ProductCard({ product, viewMode = 'grid' }: Props) {
   function handleAddToCart(e: React.MouseEvent<HTMLButtonElement>) {
     e.preventDefault();
     e.stopPropagation();
-    if (!isAuthenticated) {
-      toast.error('Debes iniciar sesión para agregar productos al carrito');
-      navigate('/login');
-      return;
-    }
+    if (added || product.stock === 0) return;
     addItem(product);
     toast.success(`${product.name} agregado al carrito`);
+    setAdded(true);
+    setTimeout(() => setAdded(false), 2000);
   }
 
   function handleFav(e: React.MouseEvent<HTMLButtonElement>) {
@@ -69,9 +64,9 @@ export function ProductCard({ product, viewMode = 'grid' }: Props) {
               )}
             </div>
           </div>
-          <button onClick={handleAddToCart}
-            className="flex-shrink-0 p-2 rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors self-center">
-            <ShoppingCart className="w-4 h-4" />
+          <button onClick={handleAddToCart} disabled={added || product.stock === 0}
+            className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-white text-xs font-medium transition-all self-center ${added ? 'bg-success' : 'bg-primary hover:bg-primary/90'} disabled:cursor-not-allowed`}>
+            {added ? 'Agregado' : <ShoppingCart className="w-4 h-4" />}
           </button>
         </motion.div>
       </Link>
@@ -102,8 +97,8 @@ export function ProductCard({ product, viewMode = 'grid' }: Props) {
               className={`p-2 rounded-full transition-all ${isFav ? 'bg-red-500 text-white' : 'bg-white/90 text-gray-700 hover:bg-red-50'}`}>
               <Heart className={`w-4 h-4 ${isFav ? 'fill-current' : ''}`} />
             </button>
-            <button onClick={handleAddToCart} disabled={product.stock === 0}
-              className="p-2 rounded-full bg-primary text-white hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
+            <button onClick={handleAddToCart} disabled={added || product.stock === 0}
+              className={`p-2 rounded-full text-white transition-all disabled:cursor-not-allowed ${added ? 'bg-success' : 'bg-primary hover:bg-primary/90 disabled:opacity-50'}`}>
               <ShoppingCart className="w-4 h-4" />
             </button>
           </div>
@@ -127,10 +122,10 @@ export function ProductCard({ product, viewMode = 'grid' }: Props) {
                 <p className="text-xs text-muted-foreground">{product.stock} disponibles</p>
               )}
             </div>
-            <button onClick={handleAddToCart} disabled={product.stock === 0}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary text-white text-xs font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+            <button onClick={handleAddToCart} disabled={added || product.stock === 0}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-white text-xs font-medium transition-colors disabled:cursor-not-allowed ${added ? 'bg-success' : 'bg-primary hover:bg-primary/90 disabled:opacity-50'}`}>
               <ShoppingCart className="w-3.5 h-3.5" />
-              Agregar
+              {added ? 'Agregado' : 'Agregar'}
             </button>
           </div>
 
