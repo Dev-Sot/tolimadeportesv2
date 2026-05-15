@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { Plus, MapPin, Edit3, Trash2, X, Star, Clock, ArrowLeft, DollarSign, Layers } from 'lucide-react';
+import { ImageUpload } from '../components/shared/ImageUpload';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { Card } from '../components/ui/Card';
@@ -11,7 +12,7 @@ import { toast } from 'sonner';
 
 const SPORTS = ['Fútbol','Tenis','Baloncesto','Voleibol','Pádel','Squash'];
 const AMENITIES_LIST = ['Estacionamiento','Vestidores','Iluminación LED','Cafetería','Equipos disponibles','Techada','Gradas','Baños'];
-const EMPTY = { name:'', description:'', sport:'Fútbol', address:'', city:'Ibagué', price_per_hour:'', images:'', amenities: [] as string[] };
+const EMPTY = { name:'', description:'', sport:'Fútbol', address:'', city:'Ibagué', price_per_hour:'', images:[] as string[], amenities: [] as string[] };
 
 export function CourtOwnerDashboardPage() {
   const { data: courts = [], isLoading } = useMyCourts();
@@ -40,7 +41,7 @@ export function CourtOwnerDashboardPage() {
       address:        c.address,
       city:           c.city,
       price_per_hour: String(c.price_per_hour),
-      images:         (c.images ?? []).join('\n'),
+      images:         c.images ?? [],
       amenities:      c.amenities ?? [],
     });
     setEditId(c.id);
@@ -59,7 +60,7 @@ export function CourtOwnerDashboardPage() {
       city:          form.city,
       price_per_hour: parseFloat(form.price_per_hour),
       amenities:     form.amenities,
-      images:        form.images.split('\n').map(s => s.trim()).filter(Boolean),
+      images:        form.images,
     };
 
     try {
@@ -164,9 +165,12 @@ export function CourtOwnerDashboardPage() {
                     </div>
                   </div>
                   <div>
-                    <label className="text-sm font-medium mb-1 block">URLs de imágenes (una por línea)</label>
-                    <textarea value={form.images} onChange={e => f('images', e.target.value)} rows={2}
-                      className="w-full px-3 py-2 border border-input rounded-xl bg-background text-sm font-mono resize-none focus:outline-none focus:ring-2 focus:ring-primary/40" />
+                    <label className="text-sm font-medium mb-2 block">Imágenes de la cancha</label>
+                    <ImageUpload
+                      value={form.images}
+                      onChange={(urls) => f('images', urls)}
+                      max={6}
+                    />
                   </div>
                   <div className="flex gap-3 pt-2">
                     <Button type="button" variant="outline" onClick={() => setShowForm(false)}>Cancelar</Button>

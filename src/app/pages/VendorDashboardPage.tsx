@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { Plus, Package, Edit3, Trash2, X, DollarSign, Layers, ArrowLeft, AlertCircle } from 'lucide-react';
+import { ImageUpload } from '../components/shared/ImageUpload';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { Card } from '../components/ui/Card';
@@ -13,11 +14,11 @@ const CATEGORIES = ['Fútbol','Tenis','Baloncesto','Gimnasio','Natación','Cicli
 
 interface ProductForm {
   name: string; description: string; price: string; category: string;
-  subcategory: string; stock: string; images: string; tags: string;
+  subcategory: string; stock: string; images: string[]; tags: string;
 }
 const EMPTY: ProductForm = {
   name:'', description:'', price:'', category:'Fútbol',
-  subcategory:'', stock:'', images:'', tags:''
+  subcategory:'', stock:'', images:[], tags:''
 };
 
 export function VendorDashboardPage() {
@@ -41,7 +42,7 @@ export function VendorDashboardPage() {
       name: p.name, description: p.description ?? '',
       price: String(p.price), category: p.category,
       subcategory: p.subcategory ?? '', stock: String(p.stock),
-      images: (p.images ?? []).join('\n'),
+      images: p.images ?? [],
       tags: (p.tags ?? []).join(', '),
     });
     setEditId(p.id); setShowForm(true);
@@ -63,7 +64,7 @@ export function VendorDashboardPage() {
       category:    form.category,
       subcategory: form.subcategory.trim() || undefined,
       stock:       parseInt(form.stock),
-      images:      form.images.split('\n').map(s => s.trim()).filter(Boolean),
+      images:      form.images,
       tags:        form.tags.split(',').map(s => s.trim()).filter(Boolean),
     };
 
@@ -231,20 +232,12 @@ export function VendorDashboardPage() {
 
                       {/* Images */}
                       <div className="sm:col-span-2">
-                        <label className="text-sm font-medium mb-1 block">
-                          URLs de imágenes
-                          <span className="text-xs text-muted-foreground ml-1">(una por línea)</span>
-                        </label>
-                        <textarea
+                        <label className="text-sm font-medium mb-2 block">Imágenes del producto</label>
+                        <ImageUpload
                           value={form.images}
-                          onChange={e => setForm({...form, images: e.target.value})}
-                          rows={3}
-                          placeholder={`https://images.unsplash.com/photo-xxx?w=800\nhttps://tu-dominio.com/imagen2.jpg`}
-                          className="w-full px-3 py-2.5 border border-input rounded-xl bg-background text-sm font-mono resize-none focus:outline-none focus:ring-2 focus:ring-primary/40"
+                          onChange={(urls) => setForm({ ...form, images: urls })}
+                          max={6}
                         />
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Puedes usar URLs de Unsplash, Cloudinary o Supabase Storage
-                        </p>
                       </div>
 
                       {/* Tags */}

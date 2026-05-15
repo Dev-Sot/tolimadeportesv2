@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { User, Package, Calendar, Trophy, Heart, Bell, Settings, Edit3, Save, X, MapPin, Phone, Mail, ArrowLeft, ShieldCheck } from 'lucide-react';
+import { ImageUpload } from '../components/shared/ImageUpload';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
@@ -49,7 +50,7 @@ export function ProfilePage() {
   const { user, updateProfile: updateStoreProfile } = useAuthStore();
   const [activeTab, setActiveTab] = useState<Tab>('overview');
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({ name: user?.name ?? '', phone: user?.phone ?? '', location: user?.location ?? '', bio: user?.bio ?? '' });
+  const [form, setForm] = useState({ name: user?.name ?? '', phone: user?.phone ?? '', location: user?.location ?? '', bio: user?.bio ?? '', avatar: user?.avatar ?? '' });
   const [savingRoles, setSavingRoles] = useState(false);
 
   const { data: stats } = useDashboardStats();
@@ -385,6 +386,23 @@ export function ProfilePage() {
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Foto de perfil</label>
+                      {editing ? (
+                        <ImageUpload
+                          value={form.avatar ? [form.avatar] : []}
+                          onChange={(urls) => setForm({ ...form, avatar: urls[0] ?? '' })}
+                          single
+                        />
+                      ) : (
+                        <img
+                          src={user.avatar ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`}
+                          alt={user.name}
+                          className="w-16 h-16 rounded-full border-2 border-border object-cover"
+                        />
+                      )}
+                    </div>
+
                     {[
                       { label: 'Nombre completo', key: 'name', type: 'text', icon: User },
                       { label: 'Teléfono', key: 'phone', type: 'tel', icon: Phone },
