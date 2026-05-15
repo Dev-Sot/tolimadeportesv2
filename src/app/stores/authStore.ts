@@ -15,11 +15,16 @@ interface AuthState {
 }
 
 function mapProfile(p: any): User {
+  const role = (p.role as UserRole) ?? 'customer';
+  const roles: UserRole[] = Array.isArray(p.roles) && p.roles.length > 0
+    ? p.roles as UserRole[]
+    : [role];
   return {
     id: p.id,
     email: p.email,
     name: p.name ?? p.email?.split('@')[0] ?? 'Usuario',
-    role: (p.role as UserRole) ?? 'customer',
+    role,
+    roles,
     avatar: p.avatar ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.email}`,
     bio: p.bio ?? '',
     phone: p.phone ?? '',
@@ -30,11 +35,13 @@ function mapProfile(p: any): User {
 
 function mapAuthUser(u: any): User {
   const meta = u.user_metadata ?? {};
+  const role = (meta.role as UserRole) ?? 'customer';
   return {
     id: u.id,
     email: u.email ?? '',
     name: meta.name ?? meta.full_name ?? u.email?.split('@')[0] ?? 'Usuario',
-    role: (meta.role as UserRole) ?? 'customer',
+    role,
+    roles: [role],
     avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.email}`,
     bio: '', phone: '', location: 'Ibagué, Tolima',
     createdAt: u.created_at ?? new Date().toISOString(),
@@ -99,6 +106,7 @@ export const useAuthStore = create<AuthState>()(
           // Upsert profile
           await supabase.from('profiles').upsert({
             id: data.user.id, email, name, role,
+            roles: [role],
             location: 'Ibagué, Tolima',
             avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`,
           }, { onConflict: 'id' });

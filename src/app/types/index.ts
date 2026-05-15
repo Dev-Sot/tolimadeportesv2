@@ -8,7 +8,8 @@ export interface User {
   email: string;
   name: string;
   avatar?: string;
-  role: UserRole;
+  role: UserRole;       // rol principal (compatibilidad)
+  roles: UserRole[];    // todos los roles del usuario
   createdAt: string;
   phone?: string;
   location?: string;
@@ -24,6 +25,7 @@ export interface SupabaseProfile {
   rating?: number;
   phone?: string;
   role?: UserRole;
+  roles?: UserRole[];
 }
 
 // Product supports both camelCase (mockData) and snake_case (Supabase)

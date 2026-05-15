@@ -45,7 +45,8 @@ function PrivateRoute({ children }: { children: ReactNode }) {
 function RoleRoute({ children, roles }: { children: ReactNode; roles: string[] }) {
   const { isAuthenticated, user } = useAuthStore();
   if (!isAuthenticated) return <Navigate to="/login" replace />;
-  if (!roles.includes(user?.role ?? '')) return <Navigate to="/dashboard" replace />;
+  const userRoles = user?.roles ?? [user?.role ?? ''];
+  if (!roles.some((r) => userRoles.includes(r as any))) return <Navigate to="/dashboard" replace />;
   return <>{children}</>;
 }
 
