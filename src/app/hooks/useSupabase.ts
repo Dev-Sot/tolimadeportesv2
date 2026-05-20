@@ -22,20 +22,6 @@ function requireUid(): string {
   throw new Error('No hay sesión activa. Por favor cierra sesión, vuelve a iniciarla y reintenta.');
 }
 
-// Wraps any thenable (including Supabase's PostgrestBuilder which is PromiseLike but
-// not a full Promise) with a hard timeout so hung requests never freeze the UI.
-// Promise.resolve() bridges the PromiseLike → Promise gap required by Promise.race.
-function withTimeout<T>(thenable: PromiseLike<T>, ms = 12_000): Promise<T> {
-  return Promise.race([
-    Promise.resolve(thenable),
-    new Promise<never>((_, reject) =>
-      setTimeout(
-        () => reject(new Error('La operación tardó demasiado. Verifica tu conexión e intenta de nuevo.')),
-        ms
-      )
-    ),
-  ]);
-}
 
 // ─── PRODUCTS ────────────────────────────────────────────────────────────────
 export function useProducts(filters?: {
@@ -121,28 +107,30 @@ export function useCreateProduct() {
         review_count: 0,
       };
 
-      // withTimeout replaces the AbortController approach:
-      // AbortSignal had inconsistent behavior in supabase-js — when the server
-      // took too long, the signal was sometimes ignored, leaving isPending=true
-      // forever. Promise.race guarantees the mutation always settles.
-      const { data, error } = await withTimeout(
-        supabase.from('products').insert(insert).select().single(),
-        12_000
-      );
+      // Direct await — withTimeout was causing false 12-second timeouts on
+      // Supabase Free Tier cold starts which can take 15-25s naturally.
+      // The browser's native fetch handles actual network failures.
+      const { data, error } = await supabase
+        .from('products')
+        .insert(insert)
+        .select()
+        .single();
 
       if (error) {
         throw new Error(
           error.code === '42501'
-            ? 'Sin permisos para publicar productos. Ejecuta el SQL de permisos en Supabase (ver README).'
+            ? 'Sin permisos para publicar. Asegúrate de haber ejecutado el SQL de políticas RLS en Supabase.'
             : error.code === '23503'
             ? 'Tu perfil no existe en la base de datos. Cierra sesión, vuelve a entrar e intenta de nuevo.'
             : error.code === '23505'
             ? 'Ya existe un producto con esos datos.'
-            : `Error al publicar (${error.code}): ${error.message}`
+            : error.code === 'PGRST301'
+            ? 'Sesión expirada. Cierra sesión y vuelve a entrar.'
+            : `Error al publicar (${error.code ?? 'desconocido'}): ${error.message}`
         );
       }
 
-      if (!data) throw new Error('El servidor no devolvió datos. Verifica tu conexión.');
+      if (!data) throw new Error('El servidor no respondió. Intenta de nuevo en unos segundos.');
       return data;
     },
     onSuccess: () => {
