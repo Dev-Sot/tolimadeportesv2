@@ -322,7 +322,8 @@ export function VendorDashboardPage() {
         </AnimatePresence>
 
         {/* ── TAB: PRODUCTS ── */}
-        {tab === 'products' && isLoading ? (
+        {/* Show skeleton only on initial fetch — not when data is already cached */}
+        {tab === 'products' && isLoading && products.length === 0 ? (
           <div className="space-y-3">
             {[1,2,3].map(i => (
               <div key={i} className="h-20 bg-secondary animate-pulse rounded-xl" />

@@ -820,7 +820,8 @@ export function useNotifications() {
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${uid}` },
-        () => qc.invalidateQueries({ queryKey: ['notifications'] })
+        // Use the exact queryKey including uid so TanStack Query hits the correct cache entry
+        () => qc.invalidateQueries({ queryKey: ['notifications', uid] })
       )
       .subscribe();
 
@@ -843,26 +844,27 @@ export function useNotifications() {
 }
 
 export function useMarkNotificationRead() {
-  const qc = useQueryClient();
+  const qc  = useQueryClient();
+  const uid = useAuthStore((s) => s.user?.id) ?? null;
   return useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from('notifications').update({ read: true }).eq('id', id);
       if (error) throw new Error(error.message);
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['notifications'] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['notifications', uid] }),
   });
 }
 
 export function useMarkAllNotificationsRead() {
-  const qc = useQueryClient();
+  const qc  = useQueryClient();
+  const uid = useAuthStore((s) => s.user?.id) ?? null;
   return useMutation({
     mutationFn: async () => {
-      const uid = getUid();
       if (!uid) return;
       await supabase.from('notifications').update({ read: true }).eq('user_id', uid).eq('read', false);
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['notifications'] });
+      qc.invalidateQueries({ queryKey: ['notifications', uid] });
       toast.success('Todas marcadas como leídas');
     },
   });

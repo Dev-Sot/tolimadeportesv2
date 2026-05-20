@@ -29,9 +29,11 @@ export function formatTime(time: string): string {
   }).format(new Date(`2000-01-01T${time}`));
 }
 
-export function formatRelativeTime(date: string): string {
-  const now = new Date();
+export function formatRelativeTime(date: string | null | undefined): string {
+  if (!date) return '';
+  const now  = new Date();
   const then = new Date(date);
+  if (isNaN(then.getTime())) return '';
   const diffInSeconds = Math.floor((now.getTime() - then.getTime()) / 1000);
 
   if (diffInSeconds < 60) {
