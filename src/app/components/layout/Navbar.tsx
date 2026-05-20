@@ -136,7 +136,7 @@ export function Navbar() {
                       <img
                         src={user.avatar ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`}
                         alt={`Avatar de ${user.name}`}
-                        className="w-8 h-8 rounded-full border-2 border-primary/20"
+                        className="w-8 h-8 rounded-full border-2 border-primary/20 object-cover"
                       />
                       <div className="hidden md:block text-left">
                         <p className="text-sm font-medium leading-tight">{user.name.split(' ')[0]}</p>
@@ -166,7 +166,7 @@ export function Navbar() {
                                 src={user.avatar ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`}
                                 alt=""
                                 aria-hidden="true"
-                                className="w-10 h-10 rounded-full"
+                                className="w-10 h-10 rounded-full object-cover"
                               />
                               <div className="min-w-0">
                                 <p className="font-semibold text-sm truncate">{user.name}</p>

@@ -212,7 +212,7 @@ export function TournamentsPage() {
                       <img
                         src={(tournament.profiles?.avatar ?? tournament.organizer?.avatar ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=org`)}
                         alt={(tournament.profiles?.name ?? tournament.organizer?.name ?? 'Organizador')}
-                        className="w-6 h-6 rounded-full"
+                        className="w-6 h-6 rounded-full object-cover"
                       />
                       <span className="text-sm text-muted-foreground">
                         {(tournament.profiles?.name ?? tournament.organizer?.name ?? 'Organizador')}

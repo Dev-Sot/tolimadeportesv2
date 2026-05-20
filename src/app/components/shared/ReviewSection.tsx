@@ -122,7 +122,7 @@ export function ReviewSection({ targetId, targetType }: Props) {
                   <img
                     src={review.profiles?.avatar ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=${review.user_id}`}
                     alt={`Avatar de ${review.profiles?.name ?? 'usuario'}`}
-                    className="w-8 h-8 rounded-full flex-shrink-0"
+                    className="w-8 h-8 rounded-full flex-shrink-0 object-cover"
                   />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-1">

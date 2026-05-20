@@ -165,7 +165,7 @@ export function ProductDetailPage() {
                 <img
                   src={((product as any).profiles?.avatar ?? product.vendor?.avatar) ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=vendor`}
                   alt={((product as any).profiles?.name ?? product.vendor?.name ?? "Vendedor") ?? 'Vendedor'}
-                  className="w-12 h-12 rounded-full"
+                  className="w-12 h-12 rounded-full object-cover"
                 />
                 <div>
                   <p className="font-medium">{((product as any).profiles?.name ?? product.vendor?.name ?? "Vendedor") ?? 'Vendedor'}</p>

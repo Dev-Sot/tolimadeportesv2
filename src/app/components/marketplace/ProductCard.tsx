@@ -145,7 +145,7 @@ export function ProductCard({ product, viewMode = 'grid' }: Props) {
 
           <div className="flex items-center gap-1.5 mt-3 pt-3 border-t border-border">
             <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${vendorName}`} alt=""
-              className="w-5 h-5 rounded-full" />
+              className="w-5 h-5 rounded-full object-cover" />
             <span className="text-xs text-muted-foreground truncate">{vendorName}</span>
           </div>
         </div>

@@ -164,7 +164,7 @@ function PostCard({ post }: { post: any }) {
     <Card className="p-5">
       <div className="flex items-start gap-3 mb-4">
         <img src={post.profiles?.avatar ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.user_id}`}
-          alt="" className="w-10 h-10 rounded-full flex-shrink-0" />
+          alt="" className="w-10 h-10 rounded-full flex-shrink-0 object-cover" />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <p className="font-semibold text-sm">{post.profiles?.name ?? 'Usuario'}</p>
@@ -246,7 +246,7 @@ export function CommunityPage() {
               <Card className="p-5">
                 <div className="flex gap-3">
                   <img src={user?.avatar ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.email}`}
-                    alt="" className="w-10 h-10 rounded-full flex-shrink-0" />
+                    alt="" className="w-10 h-10 rounded-full flex-shrink-0 object-cover" />
                   <div className="flex-1">
                     <textarea value={content} rows={3}
                       onChange={e => setContent(e.target.value)}

@@ -132,7 +132,7 @@ export function TournamentDetailPage() {
                     {participants.slice(0, 12).map((p: any) => (
                       <div key={p.id} className="flex items-center gap-2 p-2 bg-secondary/30 rounded-lg">
                         <img src={p.profiles?.avatar ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.user_id}`}
-                          alt="" className="w-8 h-8 rounded-full" />
+                          alt="" className="w-8 h-8 rounded-full object-cover" />
                         <div className="min-w-0">
                           <p className="text-xs font-medium truncate">{p.profiles?.name}</p>
                           {p.team_name && <p className="text-xs text-muted-foreground truncate">{p.team_name}</p>}
@@ -216,7 +216,7 @@ export function TournamentDetailPage() {
                 <p className="text-sm font-medium mb-3 text-muted-foreground">Organizado por</p>
                 <div className="flex items-center gap-3">
                   <img src={tournament.profiles?.avatar ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=org`}
-                    alt="" className="w-10 h-10 rounded-full" />
+                    alt="" className="w-10 h-10 rounded-full object-cover" />
                   <div>
                     <p className="font-medium text-sm">{tournament.profiles?.name}</p>
                     <p className="text-xs text-muted-foreground flex items-center gap-1">
