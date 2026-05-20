@@ -26,7 +26,8 @@ export function CourtDetailPage() {
   const { data: court, isLoading } = useCourt(id!);
   const createReservation = useCreateReservation();
 
-  const today = new Date().toISOString().split('T')[0];
+  // Colombia local date (UTC-5) so the min date in the picker is always correct
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
   const [selectedDate, setSelectedDate] = useState(today);
   const [selectedStart, setSelectedStart] = useState('');
   const [selectedEnd, setSelectedEnd] = useState('');

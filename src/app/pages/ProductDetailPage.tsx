@@ -34,6 +34,25 @@ export function ProductDetailPage() {
   const { addItem, items } = useCartStore();
   const inCart = items.some((i) => i.product.id === id);
 
+  // Show loading skeleton while fetching — checking !product alone fires before the query completes
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="animate-pulse grid lg:grid-cols-2 gap-12">
+            <div className="h-[500px] bg-secondary rounded-2xl" />
+            <div className="space-y-4">
+              <div className="h-6 bg-secondary rounded w-1/3" />
+              <div className="h-10 bg-secondary rounded w-2/3" />
+              <div className="h-32 bg-secondary rounded" />
+              <div className="h-16 bg-secondary rounded" />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!product) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center">

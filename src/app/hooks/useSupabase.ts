@@ -951,7 +951,10 @@ export function useMyReservations() {
       if (!uid) return [];
       const { data, error } = await supabase.from('reservations')
         .select('*, courts (id, name, address, city, sport, images)')
-        .eq('customer_id', uid).gte('date', new Date().toISOString().split('T')[0])
+        // Use Colombia's local date (UTC-5) — toISOString() returns UTC which can
+        // be tomorrow in Colombia after 7 PM, causing today's reservations to vanish.
+        .eq('customer_id', uid)
+        .gte('date', new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' }))
         .order('date', { ascending: true });
       if (error) { console.error('my_reservations:', error.message); return []; }
       return data ?? [];

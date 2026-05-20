@@ -162,9 +162,12 @@ export function TournamentsPage() {
                 <Card hover className="h-full overflow-hidden group">
                   <div className="relative overflow-hidden">
                     <img
-                      src={tournament.image}
+                      src={tournament.image ?? 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=600&q=80'}
                       alt={tournament.name}
                       className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=600&q=80';
+                      }}
                     />
                     {tournament.featured && (
                       <Badge variant="accent" className="absolute top-3 left-3">
