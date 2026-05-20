@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Test Supabase Insert</title>
+<style>
+  body { font-family: monospace; padding: 20px; background: #0f172a; color: #e2e8f0; }
+  button { background: #16a34a; color: white; padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; margin: 8px; }
+  .result { background: #1e293b; padding: 16px; border-radius: 8px; margin-top: 16px; white-space: pre-wrap; font-size: 13px; }
+  .ok { border-left: 4px solid #16a34a; }
+  .err { border-left: 4px solid #ef4444; }
+  h2 { color: #16a34a; }
+</style>
+</head>
+<body>
+<h2>🏆 Tolima Deportes — Test Supabase</h2>
+<p>Este archivo prueba la conexión y el insert directamente en tu navegador.</p>
+<p><strong>Instrucciones:</strong> Abre este archivo con Live Server o simplemente haz doble clic. Abre F12 → Console para ver detalles.</p>
+
+<button onclick="testSession()">1. Verificar Sesión</button>
+<button onclick="testSelect()">2. Leer Productos</button>
+<button onclick="testInsert()">3. Insertar Producto</button>
+<button onclick="testAll()">🚀 Probar Todo</button>
+
+<div id="out"></div>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+const SUPABASE_URL = 'https://dqsshdzgbhiiaykaicdq.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_602zteSqODDubUD1gZiYyg_bJLIwI68';
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+function log(msg, isError = false) {
+  const out = document.getElementById('out');
+  const div = document.createElement('div');
+  div.className = 'result ' + (isError ? 'err' : 'ok');
+  div.textContent = msg;
+  out.prepend(div);
+  console.log(msg);
+}
+
+window.testSession = async function() {
+  log('Testing session...');
+  const { data: { session }, error } = await supabase.auth.getSession();
+  if (error) { log('SESSION ERROR: ' + error.message, true); return; }
+  if (!session) {
+    log('⚠️ NO SESSION — Usuario no autenticado\nNecesitas iniciar sesión primero en la app', true);
+    return;
+  }
+  log('✅ SESSION OK\nUser ID: ' + session.user.id + '\nEmail: ' + session.user.email + '\nToken expires: ' + new Date(session.expires_at * 1000).toLocaleString());
+};
+
+window.testSelect = async function() {
+  log('Testing SELECT products...');
+  const { data, error } = await supabase.from('products').select('id, name').limit(5);
+  if (error) {
+    log('SELECT ERROR: ' + error.message + '\nCode: ' + error.code + '\nDetails: ' + error.details, true);
+  } else {
+    log('✅ SELECT OK — ' + (data?.length ?? 0) + ' productos encontrados\n' + JSON.stringify(data, null, 2));
+  }
+};
+
+window.testInsert = async function() {
+  log('Testing INSERT product...');
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) { log('ERROR: No hay sesión activa. Inicia sesión en la app primero.', true); return; }
+
+  const payload = {
+    vendor_id:    session.user.id,
+    name:         'Producto de Prueba ' + Date.now(),
+    description:  'Test',
+    price:        50000,
+    category:     'Fútbol',
+    stock:        1,
+    images:       [],
+    tags:         ['test'],
+    is_active:    true,
+    featured:     false,
+    rating:       0,
+    review_count: 0,
+  };
+
+  log('Payload:\n' + JSON.stringify(payload, null, 2));
+
+  const { data, error } = await supabase.from('products').insert(payload).select().single();
+
+  if (error) {
+    log('INSERT ERROR:\nMessage: ' + error.message + '\nCode: ' + error.code + '\nDetails: ' + error.details + '\nHint: ' + error.hint, true);
+  } else {
+    log('✅ INSERT OK!\nProducto creado: ' + JSON.stringify(data, null, 2));
+  }
+};
+
+window.testAll = async function() {
+  await window.testSession();
+  await window.testSelect();
+  await window.testInsert();
+};
+</script>
+</body>
+</html>
