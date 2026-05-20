@@ -11,19 +11,30 @@ async function insertNotification(
   await supabase.from('notifications').insert({ user_id: userId, type, title, message, link, read: false });
 }
 
-// Helper — gets current user ID from store (no network call)
+// Non-reactive read — use only inside queryFn / mutationFn callbacks, NOT in queryKey
 function getUid(): string | null {
   return useAuthStore.getState().user?.id ?? null;
 }
 
-// Helper — gets current user ID from store, with session fallback
 function requireUid(): string {
   const uid = getUid();
   if (uid) return uid;
-  // If store doesn't have user, check if we're just loading
-  throw new Error(
-    'No hay sesión activa. Por favor cierra sesión, vuelve a iniciarla y reintenta.'
-  );
+  throw new Error('No hay sesión activa. Por favor cierra sesión, vuelve a iniciarla y reintenta.');
+}
+
+// Wraps any thenable (including Supabase's PostgrestBuilder which is PromiseLike but
+// not a full Promise) with a hard timeout so hung requests never freeze the UI.
+// Promise.resolve() bridges the PromiseLike → Promise gap required by Promise.race.
+function withTimeout<T>(thenable: PromiseLike<T>, ms = 12_000): Promise<T> {
+  return Promise.race([
+    Promise.resolve(thenable),
+    new Promise<never>((_, reject) =>
+      setTimeout(
+        () => reject(new Error('La operación tardó demasiado. Verifica tu conexión e intenta de nuevo.')),
+        ms
+      )
+    ),
+  ]);
 }
 
 // ─── PRODUCTS ────────────────────────────────────────────────────────────────
@@ -71,10 +82,11 @@ export function useProduct(id: string) {
 }
 
 export function useMyProducts() {
+  const uid = useAuthStore((s) => s.user?.id) ?? null;
   return useQuery({
-    queryKey: ['my_products'],
+    queryKey: ['my_products', uid],
+    enabled: !!uid,
     queryFn: async () => {
-      const uid = getUid();
       if (!uid) return [];
       const { data, error } = await supabase.from('products')
         .select('*').eq('vendor_id', uid).order('created_at', { ascending: false });
@@ -92,7 +104,6 @@ export function useCreateProduct() {
       subcategory?: string; stock: number; images: string[]; tags: string[];
     }) => {
       const uid = requireUid();
-      console.log('useCreateProduct: uid =', uid);
 
       const insert = {
         vendor_id:    uid,
@@ -110,33 +121,29 @@ export function useCreateProduct() {
         review_count: 0,
       };
 
-      console.log('Inserting:', JSON.stringify(insert));
+      // withTimeout replaces the AbortController approach:
+      // AbortSignal had inconsistent behavior in supabase-js — when the server
+      // took too long, the signal was sometimes ignored, leaving isPending=true
+      // forever. Promise.race guarantees the mutation always settles.
+      const { data, error } = await withTimeout(
+        supabase.from('products').insert(insert).select().single(),
+        12_000
+      );
 
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 20000);
-      try {
-        const { data, error } = await supabase
-          .from('products')
-          .insert(insert)
-          .select()
-          .abortSignal(controller.signal)
-          .single();
-
-        if (error) {
-          console.error('INSERT ERROR:', JSON.stringify(error));
-          throw new Error(
-            error.code === '42501' ? 'Sin permisos: verifica que corriste fix_definitivo.sql en Supabase' :
-            error.code === '23503' ? 'Tu perfil no existe en la base de datos. Cierra sesión y vuelve a entrar.' :
-            error.code === '23505' ? 'Producto duplicado' :
-            `Error ${error.code}: ${error.message}`
-          );
-        }
-
-        console.log('INSERT OK:', data);
-        return data;
-      } finally {
-        clearTimeout(timer);
+      if (error) {
+        throw new Error(
+          error.code === '42501'
+            ? 'Sin permisos para publicar productos. Ejecuta el SQL de permisos en Supabase (ver README).'
+            : error.code === '23503'
+            ? 'Tu perfil no existe en la base de datos. Cierra sesión, vuelve a entrar e intenta de nuevo.'
+            : error.code === '23505'
+            ? 'Ya existe un producto con esos datos.'
+            : `Error al publicar (${error.code}): ${error.message}`
+        );
       }
+
+      if (!data) throw new Error('El servidor no devolvió datos. Verifica tu conexión.');
+      return data;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['products'] });
@@ -325,10 +332,11 @@ export function useDeleteCourt() {
 }
 
 export function useMyCourts() {
+  const uid = useAuthStore((s) => s.user?.id) ?? null;
   return useQuery({
-    queryKey: ['my_courts'],
+    queryKey: ['my_courts', uid],
+    enabled: !!uid,
     queryFn: async () => {
-      const uid = getUid();
       if (!uid) return [];
       const { data, error } = await supabase.from('courts')
         .select('*').eq('owner_id', uid).order('created_at', { ascending: false });
@@ -460,10 +468,11 @@ export function useDeleteTournament() {
 }
 
 export function useMyTournaments() {
+  const uid = useAuthStore((s) => s.user?.id) ?? null;
   return useQuery({
-    queryKey: ['my_tournaments'],
+    queryKey: ['my_tournaments', uid],
+    enabled: !!uid,
     queryFn: async () => {
-      const uid = getUid();
       if (!uid) return [];
       const { data, error } = await supabase.from('tournaments')
         .select('*').eq('organizer_id', uid).order('created_at', { ascending: false });
@@ -509,10 +518,11 @@ export function useCoach(id: string) {
 }
 
 export function useMyCoach() {
+  const uid = useAuthStore((s) => s.user?.id) ?? null;
   return useQuery({
-    queryKey: ['my_coach'],
+    queryKey: ['my_coach', uid],
+    enabled: !!uid,
     queryFn: async () => {
-      const uid = getUid();
       if (!uid) return null;
       const { data } = await supabase.from('coaches')
         .select('*').eq('user_id', uid).maybeSingle();
@@ -639,10 +649,11 @@ export function useToggleLike() {
 
 // ─── ORDERS ──────────────────────────────────────────────────────────────────
 export function useMyOrders() {
+  const uid = useAuthStore((s) => s.user?.id) ?? null;
   return useQuery({
-    queryKey: ['my_orders'],
+    queryKey: ['my_orders', uid],
+    enabled: !!uid,
     queryFn: async () => {
-      const uid = getUid();
       if (!uid) return [];
       const { data, error } = await supabase.from('orders')
         .select('*, order_items (*, products:product_id (id, name, images, price))')
@@ -678,12 +689,24 @@ export function useCreateOrder() {
         orderInsert.payment_reference = payload.payment_reference;
       }
 
-      const { data: order, error: oErr } = await supabase
+      // Direct await — PostgrestBuilder is PromiseLike so TypeScript infers types correctly.
+      // Graceful fallback: if payment_reference column doesn't exist yet (SQL migration
+      // §0 pending), retry without it so the order is still created successfully.
+      let { data: order, error: oErr } = await supabase
         .from('orders')
         .insert(orderInsert)
         .select()
         .single();
+
+      if (oErr?.code === '42703' && payload.payment_reference) {
+        delete orderInsert.payment_reference;
+        const retry = await supabase.from('orders').insert(orderInsert).select().single();
+        order = retry.data;
+        oErr = retry.error;
+      }
+
       if (oErr) throw new Error(oErr.message);
+      if (!order) throw new Error('El servidor no devolvió la orden. Intenta de nuevo.');
 
       const { error: iErr } = await supabase.from('order_items')
         .insert(payload.items.map((i) => ({ ...i, order_id: order.id })));
@@ -691,10 +714,14 @@ export function useCreateOrder() {
 
       return order;
     },
-    onSuccess: async (order, payload) => {
+    onSuccess: async (_order, payload) => {
       qc.invalidateQueries({ queryKey: ['my_orders'] });
       qc.invalidateQueries({ queryKey: ['vendor_orders'] });
-      toast.success('¡Pedido realizado!');
+      // Only toast for cash payments; Wompi/PSE show their own success toast after
+      // the payment widget confirms the transaction, preventing a premature celebration.
+      if (payload.payment_method === 'cash') {
+        toast.success('¡Pedido realizado!');
+      }
       // Notificar a cada vendedor afectado
       const productIds = payload.items.map(i => i.product_id);
       const { data: products } = await supabase.from('products')
@@ -728,10 +755,20 @@ export function useUpdateOrder() {
       if (payload.wompi_transaction_id) {
         updates.wompi_transaction_id = payload.wompi_transaction_id;
       }
-      const { error } = await supabase
-        .from('orders')
-        .update(updates)
-        .eq('id', payload.id);
+
+      const { error } = await supabase.from('orders').update(updates).eq('id', payload.id);
+
+      // Graceful fallback: wompi_transaction_id column might not exist yet —
+      // retry with just status so the order is still marked as paid/processing.
+      if (error?.code === '42703') {
+        const { error: e2 } = await supabase
+          .from('orders')
+          .update({ status: payload.status })
+          .eq('id', payload.id);
+        if (e2) throw new Error(e2.message);
+        return;
+      }
+
       if (error) throw new Error(error.message);
     },
     onSuccess: () => {
@@ -743,10 +780,11 @@ export function useUpdateOrder() {
 }
 
 export function useVendorOrders() {
+  const uid = useAuthStore((s) => s.user?.id) ?? null;
   return useQuery({
-    queryKey: ['vendor_orders'],
+    queryKey: ['vendor_orders', uid],
+    enabled: !!uid,
     queryFn: async () => {
-      const uid = getUid();
       if (!uid) return [];
       const { data: myProducts } = await supabase.from('products')
         .select('id').eq('vendor_id', uid);
@@ -838,10 +876,11 @@ export function useMarkAllNotificationsRead() {
 
 // ─── DASHBOARD STATS ─────────────────────────────────────────────────────────
 export function useDashboardStats() {
+  const uid = useAuthStore((s) => s.user?.id) ?? null;
   return useQuery({
-    queryKey: ['dashboard_stats'],
+    queryKey: ['dashboard_stats', uid],
+    enabled: !!uid,
     queryFn: async () => {
-      const uid = getUid();
       if (!uid) return { total_orders: 0, active_reservations: 0, tournaments_joined: 0, total_favorites: 0, total_spent: 0, unread_notifications: 0 };
       const { data, error } = await supabase.rpc('get_user_dashboard_stats');
       if (error) {
@@ -854,10 +893,11 @@ export function useDashboardStats() {
 }
 
 export function useCourtOwnerReservations() {
+  const uid = useAuthStore((s) => s.user?.id) ?? null;
   return useQuery({
-    queryKey: ['court_owner_reservations'],
+    queryKey: ['court_owner_reservations', uid],
+    enabled: !!uid,
     queryFn: async () => {
-      const uid = getUid();
       if (!uid) return [];
       const { data: courts } = await supabase.from('courts').select('id').eq('owner_id', uid);
       if (!courts?.length) return [];
@@ -907,10 +947,11 @@ export function useCancelReservation() {
 }
 
 export function useMyReservations() {
+  const uid = useAuthStore((s) => s.user?.id) ?? null;
   return useQuery({
-    queryKey: ['my_reservations'],
+    queryKey: ['my_reservations', uid],
+    enabled: !!uid,
     queryFn: async () => {
-      const uid = getUid();
       if (!uid) return [];
       const { data, error } = await supabase.from('reservations')
         .select('*, courts (id, name, address, city, sport, images)')
@@ -924,10 +965,11 @@ export function useMyReservations() {
 
 // ─── FAVORITES ───────────────────────────────────────────────────────────────
 export function useFavorites() {
+  const uid = useAuthStore((s) => s.user?.id) ?? null;
   return useQuery({
-    queryKey: ['favorites'],
+    queryKey: ['favorites', uid],
+    enabled: !!uid,
     queryFn: async () => {
-      const uid = getUid();
       if (!uid) return [];
       const { data, error } = await supabase.from('favorites').select('*').eq('user_id', uid);
       if (error) { console.error('favorites:', error.message); return []; }

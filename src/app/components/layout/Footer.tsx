@@ -64,7 +64,7 @@ style={{ height: '180px', width: '180px' }}
               />
             </Link>
             <p className="text-sm text-muted-foreground mb-4 leading-relaxed max-w-xs">
-              La plataforma deportiva SaaS #1 del Tolima. Conectamos atletas, vendedores, organizadores y entrenadores en un solo ecosistema digital.
+              La plataforma deportiva del Tolima. Conectamos atletas, vendedores, organizadores y entrenadores en un solo ecosistema digital.
             </p>
 
             {/* Social links */}

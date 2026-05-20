@@ -178,10 +178,10 @@ export function VendorDashboardPage() {
             >
               <motion.div
                 initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95 }}
-                className="bg-card rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+                className="bg-card rounded-2xl shadow-2xl w-full max-w-2xl max-h-[95dvh] sm:max-h-[90vh] overflow-y-auto mx-2 sm:mx-0"
               >
-                <div className="p-6">
-                  <div className="flex items-center justify-between mb-6">
+                <div className="p-4 sm:p-6">
+                  <div className="flex items-center justify-between mb-5 sm:mb-6">
                     <h2 className="text-xl font-bold">
                       {editId ? 'Editar producto' : 'Nuevo producto'}
                     </h2>

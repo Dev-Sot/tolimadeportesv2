@@ -7,6 +7,15 @@ img {
   height: auto;
 }
 
+/* Hide scrollbar visually while keeping it functional (e.g. horizontal tab bars) */
+.scrollbar-none {
+  scrollbar-width: none;        /* Firefox */
+  -ms-overflow-style: none;     /* IE/Edge */
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;                /* Chrome/Safari/Opera */
+}
+
 /* Visually hidden — accesible para lectores de pantalla */
 .sr-only {
   position: absolute;

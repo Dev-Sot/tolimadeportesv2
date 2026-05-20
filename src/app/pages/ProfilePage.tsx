@@ -134,10 +134,33 @@ export function ProfilePage() {
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
+
+        {/* Mobile: horizontal scrollable tab bar */}
+        <nav className="flex lg:hidden overflow-x-auto gap-2 pb-2 mb-6 -mx-4 px-4 scrollbar-none">
+          {TABS.map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              onClick={() => setActiveTab(id)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap flex-shrink-0 transition-all
+                ${activeTab === id
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-secondary/60 text-muted-foreground hover:text-foreground'}`}
+            >
+              <Icon className="w-4 h-4" aria-hidden="true" />
+              {label}
+              {id === 'notifications' && unread > 0 && (
+                <span className="ml-1 text-xs bg-destructive text-destructive-foreground rounded-full w-4 h-4 flex items-center justify-center leading-none">
+                  {unread > 9 ? '9+' : unread}
+                </span>
+              )}
+            </button>
+          ))}
+        </nav>
+
         <div className="grid lg:grid-cols-4 gap-8">
-          {/* Sidebar nav */}
-          <aside>
+          {/* Desktop sidebar nav */}
+          <aside className="hidden lg:block">
             <nav className="space-y-1">
               {TABS.map(({ id, label, icon: Icon }) => (
                 <button key={id} onClick={() => setActiveTab(id)}

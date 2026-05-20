@@ -73,11 +73,11 @@ export function CartPage() {
                 >
                   <Card className="p-4">
                     <div className="flex gap-4">
-                      <Link to={`/marketplace/product/${item.product.id}`}>
+                      <Link to={`/marketplace/product/${item.product.id}`} className="flex-shrink-0">
                         <img
                           src={item.product.images[0]}
                           alt={item.product.name}
-                          className="w-24 h-24 object-cover rounded-lg hover:opacity-80 transition-opacity"
+                          className="w-16 h-16 sm:w-24 sm:h-24 object-cover rounded-lg hover:opacity-80 transition-opacity"
                         />
                       </Link>
 

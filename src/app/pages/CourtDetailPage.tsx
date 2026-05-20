@@ -93,7 +93,7 @@ export function CourtDetailPage() {
           </div>
         )}
         {imgs.length > 1 && (
-          <div className="absolute bottom-4 right-4 flex gap-2">
+          <div className="absolute bottom-4 right-4 hidden sm:flex gap-2">
             {imgs.slice(0,4).map((img: string, i: number) => (
               <img key={i} src={img} alt="" onClick={() => setActiveImg(i)}
                 className={`w-12 h-12 object-cover rounded-lg cursor-pointer border-2 transition-all ${i === activeImg ? 'border-white' : 'border-transparent opacity-70'}`} />
@@ -104,8 +104,111 @@ export function CourtDetailPage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid lg:grid-cols-3 gap-8">
+          {/* Booking widget — first on mobile, last on desktop */}
+          <div className="order-first lg:order-last lg:row-start-1">
+            <Card className="lg:sticky lg:top-24">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle>Reservar Cancha</CardTitle>
+                  <div>
+                    <span className="text-2xl font-bold text-primary">{formatCurrency(court.price_per_hour)}</span>
+                    <span className="text-sm text-muted-foreground">/hora</span>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium mb-1 block">Fecha</label>
+                  <input type="date" value={selectedDate} min={today}
+                    onChange={(e) => { setSelectedDate(e.target.value); setSelectedStart(''); setSelectedEnd(''); }}
+                    className="w-full px-3 py-2 border border-input rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-ring text-sm" />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium mb-2 flex items-center justify-between">
+                    Hora de inicio
+                    <span className="flex items-center gap-2 text-xs font-normal text-muted-foreground">
+                      <span className="w-3 h-3 rounded bg-destructive/70 inline-block" /> Ocupado
+                      <span className="w-3 h-3 rounded bg-primary inline-block" /> Seleccionado
+                    </span>
+                  </label>
+                  <div className="grid grid-cols-4 gap-1">
+                    {TIME_SLOTS.slice(0, -1).map((slot) => {
+                      const occ = isSlotOccupied(slot);
+                      const sel = selectedStart === slot;
+                      return (
+                        <button key={slot} disabled={occ}
+                          onClick={() => { setSelectedStart(slot); setSelectedEnd(''); }}
+                          className={`px-1 py-2 rounded text-xs font-medium transition-colors
+                            ${occ ? 'bg-destructive/70 text-white cursor-not-allowed' :
+                              sel ? 'bg-primary text-primary-foreground' :
+                              'bg-secondary hover:bg-secondary/80'}`}>
+                          {slot}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {selectedStart && (
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Hora de fin</label>
+                    <div className="grid grid-cols-4 gap-1">
+                      {TIME_SLOTS.filter((s) => s > selectedStart).map((slot) => {
+                        const occ = isSlotOccupied(slot);
+                        const endDis = isEndDisabled(slot);
+                        const sel = selectedEnd === slot;
+                        const disabled = occ || endDis;
+                        return (
+                          <button key={slot} disabled={disabled}
+                            onClick={() => setSelectedEnd(slot)}
+                            className={`px-1 py-2 rounded text-xs font-medium transition-colors
+                              ${disabled ? 'bg-destructive/70 text-white cursor-not-allowed' :
+                                sel ? 'bg-primary text-primary-foreground' :
+                                'bg-secondary hover:bg-secondary/80'}`}>
+                            {slot}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {selectedStart && selectedEnd && (
+                  <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
+                    className="bg-secondary/50 rounded-lg p-3 space-y-1 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Horario</span>
+                      <span>{selectedStart} – {selectedEnd}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Fecha</span>
+                      <span>{formatDate(selectedDate)}</span>
+                    </div>
+                    <div className="flex justify-between font-semibold border-t border-border pt-1 mt-1">
+                      <span>Total</span>
+                      <span className="text-primary">{formatCurrency(calcTotal())}</span>
+                    </div>
+                  </motion.div>
+                )}
+
+                <Button fullWidth size="lg"
+                  disabled={!selectedStart || !selectedEnd || createReservation.isPending}
+                  loading={createReservation.isPending}
+                  onClick={handleReserve}>
+                  <Calendar className="w-4 h-4" />
+                  {isAuthenticated ? 'Confirmar Reserva' : 'Inicia sesión para reservar'}
+                </Button>
+
+                <p className="text-xs text-center text-muted-foreground">
+                  Sin cargos adicionales · Cancelación hasta 24h antes
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
           {/* Info */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-6 order-last lg:order-first">
             <div>
               <div className="flex items-start justify-between gap-4 mb-3">
                 <div>
@@ -180,108 +283,6 @@ export function CourtDetailPage() {
             <ReviewSection targetId={id!} targetType="court" />
           </div>
 
-          {/* Booking widget */}
-          <div>
-            <Card className="sticky top-24">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle>Reservar Cancha</CardTitle>
-                  <div>
-                    <span className="text-2xl font-bold text-primary">{formatCurrency(court.price_per_hour)}</span>
-                    <span className="text-sm text-muted-foreground">/hora</span>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium mb-1 block">Fecha</label>
-                  <input type="date" value={selectedDate} min={today}
-                    onChange={(e) => { setSelectedDate(e.target.value); setSelectedStart(''); setSelectedEnd(''); }}
-                    className="w-full px-3 py-2 border border-input rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-ring text-sm" />
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium mb-2 flex items-center justify-between">
-                    Hora de inicio
-                    <span className="flex items-center gap-2 text-xs font-normal text-muted-foreground">
-                      <span className="w-3 h-3 rounded bg-destructive/70 inline-block" /> Ocupado
-                      <span className="w-3 h-3 rounded bg-primary inline-block" /> Seleccionado
-                    </span>
-                  </label>
-                  <div className="grid grid-cols-4 gap-1">
-                    {TIME_SLOTS.slice(0, -1).map((slot) => {
-                      const occ = isSlotOccupied(slot);
-                      const sel = selectedStart === slot;
-                      return (
-                        <button key={slot} disabled={occ}
-                          onClick={() => { setSelectedStart(slot); setSelectedEnd(''); }}
-                          className={`px-1 py-1.5 rounded text-xs font-medium transition-colors
-                            ${occ ? 'bg-destructive/70 text-white cursor-not-allowed' :
-                              sel ? 'bg-primary text-primary-foreground' :
-                              'bg-secondary hover:bg-secondary/80'}`}>
-                          {slot}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {selectedStart && (
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Hora de fin</label>
-                    <div className="grid grid-cols-4 gap-1">
-                      {TIME_SLOTS.filter((s) => s > selectedStart).map((slot) => {
-                        const occ = isSlotOccupied(slot);
-                        const endDis = isEndDisabled(slot);
-                        const sel = selectedEnd === slot;
-                        const disabled = occ || endDis;
-                        return (
-                          <button key={slot} disabled={disabled}
-                            onClick={() => setSelectedEnd(slot)}
-                            className={`px-1 py-1.5 rounded text-xs font-medium transition-colors
-                              ${disabled ? 'bg-destructive/70 text-white cursor-not-allowed' :
-                                sel ? 'bg-primary text-primary-foreground' :
-                                'bg-secondary hover:bg-secondary/80'}`}>
-                            {slot}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {selectedStart && selectedEnd && (
-                  <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
-                    className="bg-secondary/50 rounded-lg p-3 space-y-1 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Horario</span>
-                      <span>{selectedStart} – {selectedEnd}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Fecha</span>
-                      <span>{formatDate(selectedDate)}</span>
-                    </div>
-                    <div className="flex justify-between font-semibold border-t border-border pt-1 mt-1">
-                      <span>Total</span>
-                      <span className="text-primary">{formatCurrency(calcTotal())}</span>
-                    </div>
-                  </motion.div>
-                )}
-
-                <Button fullWidth size="lg"
-                  disabled={!selectedStart || !selectedEnd || createReservation.isPending}
-                  loading={createReservation.isPending}
-                  onClick={handleReserve}>
-                  <Calendar className="w-4 h-4" />
-                  {isAuthenticated ? 'Confirmar Reserva' : 'Inicia sesión para reservar'}
-                </Button>
-
-                <p className="text-xs text-center text-muted-foreground">
-                  Sin cargos adicionales · Cancelación hasta 24h antes
-                </p>
-              </CardContent>
-            </Card>
-          </div>
         </div>
       </div>
     </div>
