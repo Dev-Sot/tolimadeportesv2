@@ -131,7 +131,10 @@ export const useAuthStore = create<AuthState>()(
       },
 
       logout: async () => {
-        try { await supabase.auth.signOut(); } catch { /* ignore */ }
+        // Sign out from Supabase FIRST so the server session is invalidated
+        // before clearing local state. This avoids a TOKEN_REFRESHED event
+        // arriving after logout and re-setting isAuthenticated = true.
+        try { await supabase.auth.signOut(); } catch { /* ignore network errors */ }
         set({ user: null, isAuthenticated: false, activeRole: 'customer' });
       },
 
@@ -155,10 +158,23 @@ export const useAuthStore = create<AuthState>()(
 supabase.auth.onAuthStateChange(async (event, session) => {
   try {
     if (event === 'SIGNED_OUT') {
-      useAuthStore.setState({ user: null, isAuthenticated: false });
+      useAuthStore.setState({ user: null, isAuthenticated: false, activeRole: 'customer' });
       return;
     }
-    if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user) {
+    if (event === 'SIGNED_IN' && session?.user) {
+      const { data: profile } = await supabase
+        .from('profiles').select('*').eq('id', session.user.id).maybeSingle();
+      useAuthStore.setState({
+        user: profile ? mapProfile(profile) : mapAuthUser(session.user),
+        isAuthenticated: true,
+      });
+      return;
+    }
+    // TOKEN_REFRESHED: only sync if we are already authenticated to avoid
+    // re-setting state after a logout (signOut fires SIGNED_OUT, but a
+    // concurrent TOKEN_REFRESHED can arrive milliseconds later).
+    if (event === 'TOKEN_REFRESHED' && session?.user) {
+      if (!useAuthStore.getState().isAuthenticated) return;
       const { data: profile } = await supabase
         .from('profiles').select('*').eq('id', session.user.id).maybeSingle();
       useAuthStore.setState({

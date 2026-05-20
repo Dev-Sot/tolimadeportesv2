@@ -19,7 +19,7 @@ export function MarketplacePage() {
   const [showFilters, setShowFilters]         = useState(false);
   const [viewMode, setViewMode]               = useState<'grid' | 'list'>('grid');
 
-  const { data: products = [], isLoading, isError, refetch } = useProducts({
+  const { data: products = [], isLoading, isFetching, isError, refetch } = useProducts({
     category: selectedCategory || undefined,
     search:   searchQuery      || undefined,
     minPrice: priceRange[0] > 0        ? priceRange[0] : undefined,
@@ -159,8 +159,8 @@ export function MarketplacePage() {
               </div>
             </div>
 
-            {/* Loading skeleton */}
-            {isLoading && (
+            {/* Loading skeleton - only on first load, not on filter changes with cached data */}
+            {isLoading && products.length === 0 && (
               <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
                 {[1,2,3,4,5,6].map((i) => (
                   <div key={i} className="h-72 bg-secondary/50 animate-pulse rounded-2xl" />
@@ -185,7 +185,7 @@ export function MarketplacePage() {
             )}
 
             {/* Empty state */}
-            {!isLoading && !isError && products.length === 0 && (
+            {!isLoading && !isFetching && !isError && products.length === 0 && (
               <div className="flex flex-col items-center justify-center py-24 text-center">
                 <div className="w-20 h-20 rounded-full bg-secondary/50 flex items-center justify-center mb-4">
                   <Store className="w-10 h-10 text-muted-foreground" />
@@ -211,7 +211,7 @@ export function MarketplacePage() {
             )}
 
             {/* Products */}
-            {!isLoading && !isError && products.length > 0 && (
+            {(!isLoading || products.length > 0) && !isError && products.length > 0 && (
               <div className={viewMode === 'grid' ? 'grid md:grid-cols-2 xl:grid-cols-3 gap-6' : 'space-y-4'}>
                 {products.map((product, index) => (
                   <motion.div key={product.id}
