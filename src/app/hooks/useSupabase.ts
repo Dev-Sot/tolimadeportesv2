@@ -16,8 +16,11 @@ function getUid(): string | null {
   return useAuthStore.getState().user?.id ?? null;
 }
 
-function requireUid(): string {
-  const uid = getUid();
+// Always reads from the LIVE Supabase session so the uid we send to the DB
+// matches auth.uid() in RLS policies — even after a silent token refresh.
+async function requireUid(): Promise<string> {
+  const { data: { session } } = await supabase.auth.getSession();
+  const uid = session?.user?.id ?? null;
   if (uid) return uid;
   throw new Error('No hay sesión activa. Por favor cierra sesión, vuelve a iniciarla y reintenta.');
 }
@@ -49,7 +52,9 @@ export function useProducts(filters?: {
       if (error) { console.error('products:', error.message); throw new Error(error.message); }
       return data ?? [];
     },
-    retry: 1, staleTime: 30000,
+    retry: 1,
+    staleTime: 1000 * 60 * 2,
+    placeholderData: (prev: any) => prev,
   });
 }
 
@@ -72,6 +77,7 @@ export function useMyProducts() {
   return useQuery({
     queryKey: ['my_products', uid],
     enabled: !!uid,
+    staleTime: 1000 * 60 * 2,
     queryFn: async () => {
       if (!uid) return [];
       const { data, error } = await supabase.from('products')
@@ -89,7 +95,7 @@ export function useCreateProduct() {
       name: string; description: string; price: number; category: string;
       subcategory?: string; stock: number; images: string[]; tags: string[];
     }) => {
-      const uid = requireUid();
+      const uid = await requireUid();
 
       const insert = {
         vendor_id:    uid,
@@ -237,7 +243,7 @@ export function useCreateReservation() {
       court_id: string; date: string; start_time: string;
       end_time: string; total_price: number; notes?: string;
     }) => {
-      const uid = requireUid();
+      const uid = await requireUid();
       const { data, error } = await supabase.from('reservations')
         .insert({ ...payload, customer_id: uid }).select().single();
       if (error) throw new Error(error.message);
@@ -268,7 +274,7 @@ export function useCreateCourt() {
       name: string; description: string; sport: string; address: string;
       city: string; price_per_hour: number; amenities: string[]; images: string[];
     }) => {
-      const uid = requireUid();
+      const uid = await requireUid();
       const { data, error } = await supabase.from('courts')
         .insert({ ...payload, owner_id: uid, is_active: true, featured: false, rating: 0, review_count: 0 })
         .select().single();
@@ -371,7 +377,7 @@ export function useJoinTournament() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ tournamentId, teamName }: { tournamentId: string; teamName?: string }) => {
-      const uid = requireUid();
+      const uid = await requireUid();
       const { data, error } = await supabase.from('tournament_participants')
         .insert({ tournament_id: tournamentId, user_id: uid, team_name: teamName ?? null })
         .select().single();
@@ -408,7 +414,7 @@ export function useCreateTournament() {
       start_date: string; end_date: string; registration_deadline: string;
       max_participants: number; entry_fee: number; prizes: string[]; rules?: string;
     }) => {
-      const uid = requireUid();
+      const uid = await requireUid();
       const { data, error } = await supabase.from('tournaments')
         .insert({ ...payload, organizer_id: uid, status: 'upcoming', featured: false, current_participants: 0 })
         .select().single();
@@ -526,7 +532,7 @@ export function useUpsertCoach() {
       specialties: string[]; experience: string; certifications: string[];
       bio: string; hourly_rate: number; availability: string;
     }) => {
-      const uid = requireUid();
+      const uid = await requireUid();
       const { data: existing } = await supabase.from('coaches')
         .select('id').eq('user_id', uid).maybeSingle();
       if (existing) {
@@ -571,7 +577,7 @@ export function useCreateReview() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (payload: { target_id: string; target_type: string; rating: number; comment: string }) => {
-      const uid = requireUid();
+      const uid = await requireUid();
       const { data, error } = await supabase.from('reviews')
         .insert({ ...payload, user_id: uid }).select().single();
       if (error) {
@@ -607,7 +613,7 @@ export function useCreatePost() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (payload: { content: string; sport?: string; images?: string[] }) => {
-      const uid = requireUid();
+      const uid = await requireUid();
       const { data, error } = await supabase.from('posts')
         .insert({ ...payload, user_id: uid }).select().single();
       if (error) throw new Error(error.message);
@@ -622,7 +628,7 @@ export function useToggleLike() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ postId, liked }: { postId: string; liked: boolean }) => {
-      const uid = requireUid();
+      const uid = await requireUid();
       if (liked) {
         await supabase.from('post_likes').delete().eq('post_id', postId).eq('user_id', uid);
       } else {
@@ -664,7 +670,7 @@ export function useCreateOrder() {
        *  ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_reference TEXT; */
       payment_reference?: string;
     }) => {
-      const uid = requireUid();
+      const uid = await requireUid();
 
       const orderInsert: Record<string, unknown> = {
         customer_id:      uid,
@@ -970,7 +976,7 @@ export function useToggleFavorite() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ targetId, targetType, isFav }: { targetId: string; targetType: string; isFav: boolean }) => {
-      const uid = requireUid();
+      const uid = await requireUid();
       if (isFav) {
         await supabase.from('favorites').delete().eq('user_id', uid).eq('target_id', targetId);
       } else {
@@ -988,7 +994,7 @@ export function useUpdateProfile() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (updates: { name?: string; bio?: string; phone?: string; location?: string }) => {
-      const uid = requireUid();
+      const uid = await requireUid();
       const { data, error } = await supabase.from('profiles')
         .update(updates).eq('id', uid).select().single();
       if (error) throw new Error(error.message);
