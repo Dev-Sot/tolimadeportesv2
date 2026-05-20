@@ -94,9 +94,13 @@ export function LoginPage() {
           </Link>
 
           {/* Mobile logo */}
-          <div className="flex items-center gap-2 lg:hidden mb-8">
-            <img src="/DeportesTolima.png" alt="Tolima Deportes" className="h-8 w-auto object-contain" />
-            <span className="font-bold text-xl">Tolima Deportes</span>
+          <div className="flex items-center justify-center lg:hidden mb-8">
+            <img
+              src="/DeportesTolima.png"
+              alt="Tolima Deportes"
+              style={{ height: '60px', width: 'auto' }}
+              className="object-contain"
+            />
           </div>
 
           <div className="mb-8">
