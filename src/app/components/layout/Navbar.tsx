@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { Menu, X, ShoppingCart, User, LogOut, Store, Trophy, Users, MapPin, Bell, LayoutDashboard, ChevronDown, RefreshCw } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
@@ -22,9 +22,10 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 export function Navbar() {
-  const location = useLocation();
+  const location  = useLocation();
+  const navigate  = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [userOpen, setUserOpen] = useState(false);
+  const [userOpen, setUserOpen]     = useState(false);
   const { user, isAuthenticated, logout, activeRole, setActiveRole } = useAuthStore();
 
   function handleUserMenuKeyDown(e: React.KeyboardEvent) {
@@ -220,7 +221,11 @@ export function Navbar() {
                             <div className="border-t border-border my-1" role="separator" />
                             <button
                               role="menuitem"
-                              onClick={() => { logout(); setUserOpen(false); }}
+                              onClick={async () => {
+                                setUserOpen(false);
+                                await logout();
+                                navigate('/marketplace', { replace: true });
+                              }}
                               className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-destructive/10 text-destructive transition-colors text-sm"
                             >
                               <LogOut className="w-4 h-4" aria-hidden="true" />

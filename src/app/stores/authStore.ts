@@ -131,8 +131,10 @@ export const useAuthStore = create<AuthState>()(
       },
 
       logout: async () => {
-        try { await supabase.auth.signOut(); } catch { /* ignore */ }
+        // Clear local state FIRST so the UI responds immediately.
+        // signOut is fire-and-forget: even if it fails, the local session is gone.
         set({ user: null, isAuthenticated: false, activeRole: 'customer' });
+        supabase.auth.signOut().catch(() => {});
       },
 
       updateProfile: (updates) => {
