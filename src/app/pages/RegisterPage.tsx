@@ -107,8 +107,13 @@ export function RegisterPage() {
             transition={{ duration: 0.6 }}
             className="text-center"
           >
-            <div className="w-20 h-20 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center mx-auto mb-6">
-              <Trophy className="w-12 h-12" />
+            <div className="mx-auto mb-6 flex items-center justify-center">
+              <img
+                src="/DeportesTolima.png"
+                alt="Tolima Deportes"
+                style={{ height: '120px', width: 'auto' }}
+                className="object-contain"
+              />
             </div>
             <h1 className="text-5xl font-bold mb-4">Únete a nosotros</h1>
             <p className="text-xl text-white/90 max-w-md mb-8">
@@ -154,16 +159,8 @@ export function RegisterPage() {
           </div>
 
           <div className="flex items-center gap-2 mb-8">
-            <div
-              className={`flex-1 h-2 rounded-full ${
-                step >= 1 ? 'bg-primary' : 'bg-secondary'
-              }`}
-            />
-            <div
-              className={`flex-1 h-2 rounded-full ${
-                step >= 2 ? 'bg-primary' : 'bg-secondary'
-              }`}
-            />
+            <div className={`flex-1 h-2 rounded-full ${step >= 1 ? 'bg-primary' : 'bg-secondary'}`} />
+            <div className={`flex-1 h-2 rounded-full ${step >= 2 ? 'bg-primary' : 'bg-secondary'}`} />
           </div>
 
           {error && (
@@ -223,7 +220,6 @@ export function RegisterPage() {
                 icon={<UserIcon className="w-5 h-5" />}
                 required
               />
-
               <Input
                 type="email"
                 label="Correo Electrónico"
@@ -233,7 +229,6 @@ export function RegisterPage() {
                 icon={<Mail className="w-5 h-5" />}
                 required
               />
-
               <Input
                 type="password"
                 label="Contraseña"
@@ -243,7 +238,6 @@ export function RegisterPage() {
                 icon={<Lock className="w-5 h-5" />}
                 required
               />
-
               <Input
                 type="password"
                 label="Confirmar Contraseña"
@@ -253,7 +247,6 @@ export function RegisterPage() {
                 icon={<Lock className="w-5 h-5" />}
                 required
               />
-
               <div className="flex items-start gap-2 text-sm text-muted-foreground">
                 <input type="checkbox" required className="mt-1 rounded border-border" />
                 <span>
@@ -267,7 +260,6 @@ export function RegisterPage() {
                   </Link>
                 </span>
               </div>
-
               <div className="flex gap-3">
                 <Button type="button" variant="outline" onClick={() => setStep(1)} fullWidth>
                   Atrás

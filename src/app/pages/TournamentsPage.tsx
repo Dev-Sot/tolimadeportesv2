@@ -27,7 +27,6 @@ export function TournamentsPage() {
     search: searchQuery || undefined,
   });
 
-
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'upcoming':
@@ -50,14 +49,9 @@ export function TournamentsPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-accent to-yellow-500 flex items-center justify-center">
-                <Trophy className="w-7 h-7 text-white" />
-              </div>
-              <div>
-                <h1 className="text-4xl font-bold">Torneos Deportivos</h1>
-                <p className="text-muted-foreground">Compite y gana en Tolima</p>
-              </div>
+            <div className="mb-4">
+              <h1 className="text-4xl font-bold">Torneos Deportivos</h1>
+              <p className="text-muted-foreground">Compite y gana en Tolima</p>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3 mt-6">

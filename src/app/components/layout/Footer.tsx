@@ -57,9 +57,10 @@ export function Footer() {
           <div className="col-span-2 md:col-span-3 lg:col-span-2">
             <Link to="/marketplace" className="inline-flex items-center gap-3 mb-4" aria-label="Tolima Deportes — Ir al inicio">
               <img
-                src="/logo.png"
+                src="/DeportesTolima.png"
                 alt="Tolima Deportes"
-                className="h-14 w-auto object-contain"
+                className="object-contain"
+style={{ height: '180px', width: '180px' }}
               />
             </Link>
             <p className="text-sm text-muted-foreground mb-4 leading-relaxed max-w-xs">

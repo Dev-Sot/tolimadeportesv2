@@ -142,14 +142,12 @@ function PostCard({ post }: { post: any }) {
       return;
     }
     const newLiked = !liked;
-    // Optimistic update
     setLiked(newLiked);
     setCount(p => newLiked ? p + 1 : p - 1);
     try {
       await toggleLike.mutateAsync({ postId: post.id, liked });
       qc.invalidateQueries({ queryKey: ['posts'] });
     } catch {
-      // Revert
       setLiked(liked);
       setCount(p => newLiked ? p - 1 : p + 1);
     }
@@ -164,7 +162,6 @@ function PostCard({ post }: { post: any }) {
 
   return (
     <Card className="p-5">
-      {/* Header */}
       <div className="flex items-start gap-3 mb-4">
         <img src={post.profiles?.avatar ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.user_id}`}
           alt="" className="w-10 h-10 rounded-full flex-shrink-0" />
@@ -185,7 +182,6 @@ function PostCard({ post }: { post: any }) {
         </div>
       </div>
 
-      {/* Content */}
       <p className="text-sm leading-relaxed whitespace-pre-line mb-4">{post.content}</p>
       {post.images?.length > 0 && (
         <div className="mb-4 rounded-xl overflow-hidden">
@@ -193,7 +189,6 @@ function PostCard({ post }: { post: any }) {
         </div>
       )}
 
-      {/* Actions */}
       <div className="flex items-center gap-5 pt-3 border-t border-border">
         <button onClick={handleLike}
           className={`flex items-center gap-1.5 text-sm transition-colors ${liked ? 'text-red-500' : 'text-muted-foreground hover:text-red-400'}`}>
@@ -235,14 +230,9 @@ export function CommunityPage() {
       <div className="bg-gradient-to-br from-primary/5 via-accent/5 to-transparent border-b border-border py-12">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                <Users className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-3xl font-bold">Comunidad Deportiva</h1>
-                <p className="text-muted-foreground text-sm">Tolima · Colombia</p>
-              </div>
+            <div className="mb-3">
+              <h1 className="text-3xl font-bold">Comunidad Deportiva</h1>
+              <p className="text-muted-foreground text-sm">Tolima · Colombia</p>
             </div>
           </motion.div>
         </div>
@@ -252,7 +242,6 @@ export function CommunityPage() {
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Feed */}
           <div className="lg:col-span-2 space-y-5">
-            {/* Create post */}
             {isAuthenticated ? (
               <Card className="p-5">
                 <div className="flex gap-3">
@@ -301,7 +290,6 @@ export function CommunityPage() {
               </Card>
             )}
 
-            {/* Posts */}
             {isLoading ? (
               <div className="space-y-4">{[1,2,3].map(i => <div key={i} className="h-40 bg-secondary animate-pulse rounded-2xl" />)}</div>
             ) : posts.length === 0 ? (

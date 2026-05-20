@@ -60,8 +60,13 @@ export function LoginPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <div className="w-20 h-20 bg-white/15 backdrop-blur-md rounded-2xl flex items-center justify-center mx-auto mb-6">
-              <Trophy className="w-10 h-10" />
+            <div className="mx-auto mb-6 flex items-center justify-center">
+              <img
+                src="/DeportesTolima.png"
+                alt="Tolima Deportes"
+                style={{ height: '120px', width: 'auto' }}
+                className="object-contain"
+              />
             </div>
             <h2 className="text-4xl font-bold mb-3">Tolima Deportes</h2>
             <p className="text-white/80 text-lg max-w-xs leading-relaxed">
@@ -90,7 +95,7 @@ export function LoginPage() {
 
           {/* Mobile logo */}
           <div className="flex items-center gap-2 lg:hidden mb-8">
-            <img src="/logo.png" alt="Tolima Deportes" className="h-8 w-auto object-contain" />
+            <img src="/DeportesTolima.png" alt="Tolima Deportes" className="h-8 w-auto object-contain" />
             <span className="font-bold text-xl">Tolima Deportes</span>
           </div>
 

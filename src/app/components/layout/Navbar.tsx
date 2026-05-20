@@ -47,9 +47,12 @@ export function Navbar() {
               className="flex items-center gap-2.5 shrink-0"
               aria-label="Tolima Deportes — Ir al inicio"
             >
-              <div className="w-9 h-9 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center">
-                <Trophy className="w-5 h-5 text-white" aria-hidden="true" />
-              </div>
+              <img
+  src="/DeportesTolima.png"
+  alt="Tolima Deportes"
+  className="w-9 h-9 object-contain"
+  aria-hidden="true"
+/>
               <span className="font-bold text-lg hidden sm:block">Tolima Deportes</span>
             </Link>
 
