@@ -85,8 +85,10 @@ export function DashboardPage() {
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
           className="bg-gradient-to-br from-primary/8 via-accent/5 to-transparent rounded-2xl p-6 mb-8 border border-border">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
-            <img src={user?.avatar ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.email}`}
-              alt={user?.name} className="w-16 h-16 rounded-full border-4 border-background shadow-md object-cover" />
+            <div className="w-16 h-16 rounded-full border-4 border-background shadow-md overflow-hidden flex-shrink-0 bg-secondary">
+              <img src={user?.avatar ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.email}`}
+                alt={user?.name} className="w-full h-full object-cover" />
+            </div>
             <div className="flex-1">
               <h1 className="text-2xl font-bold">¡Hola, {user?.name?.split(' ')[0]}! 👋</h1>
               <p className="text-muted-foreground text-sm mt-0.5">

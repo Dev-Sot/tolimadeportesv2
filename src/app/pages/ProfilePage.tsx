@@ -108,8 +108,13 @@ export function ProfilePage() {
           <Link to="/dashboard" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-5 transition-colors"><ArrowLeft className="w-4 h-4" /> Volver al dashboard</Link>
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
             <div className="relative">
-              <img src={user.avatar ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.email}`}
-                alt={user?.name ?? ""} className="w-24 h-24 rounded-full border-4 border-background shadow-lg object-cover" />
+              <div className="w-24 h-24 rounded-full border-4 border-background shadow-lg overflow-hidden bg-secondary flex-shrink-0">
+                <img
+                  src={user.avatar ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.email}`}
+                  alt={user?.name ?? ""}
+                  className="w-full h-full object-cover"
+                />
+              </div>
               <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-success rounded-full border-2 border-background" />
             </div>
             <div className="flex-1">
@@ -430,11 +435,13 @@ export function ProfilePage() {
                           single
                         />
                       ) : (
+                        <div className="w-16 h-16 rounded-full border-2 border-border overflow-hidden bg-secondary">
                         <img
                           src={user.avatar ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`}
                           alt={user.name}
-                          className="w-16 h-16 rounded-full border-2 border-border object-cover"
+                          className="w-full h-full object-cover"
                         />
+                        </div>
                       )}
                     </div>
 

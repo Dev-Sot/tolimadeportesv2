@@ -133,11 +133,13 @@ export function Navbar() {
                       aria-label={`Menú de usuario — ${user.name}`}
                       className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-secondary/60 transition-colors"
                     >
-                      <img
-                        src={user.avatar ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`}
-                        alt={`Avatar de ${user.name}`}
-                        className="w-8 h-8 rounded-full border-2 border-primary/20 object-cover"
-                      />
+                      <div className="w-8 h-8 rounded-full border-2 border-primary/20 overflow-hidden flex-shrink-0 bg-secondary">
+                        <img
+                          src={user.avatar ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`}
+                          alt={`Avatar de ${user.name}`}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
                       <div className="hidden md:block text-left">
                         <p className="text-sm font-medium leading-tight">{user.name.split(' ')[0]}</p>
                         <p className="text-xs text-muted-foreground leading-tight">{ROLE_LABELS[activeRole] ?? activeRole}</p>
@@ -162,12 +164,13 @@ export function Navbar() {
                         >
                           <div className="p-4 border-b border-border bg-secondary/20">
                             <div className="flex items-center gap-3 mb-3">
-                              <img
-                                src={user.avatar ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`}
-                                alt=""
-                                aria-hidden="true"
-                                className="w-10 h-10 rounded-full object-cover"
-                              />
+                              <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 bg-secondary" aria-hidden="true">
+                                <img
+                                  src={user.avatar ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`}
+                                  alt=""
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
                               <div className="min-w-0">
                                 <p className="font-semibold text-sm truncate">{user.name}</p>
                                 <p className="text-xs text-muted-foreground truncate">{user.email}</p>

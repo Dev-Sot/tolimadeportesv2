@@ -998,7 +998,7 @@ export function useUpdateProfile() {
   const { updateProfile } = useAuthStore();
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (updates: { name?: string; bio?: string; phone?: string; location?: string }) => {
+    mutationFn: async (updates: { name?: string; bio?: string; phone?: string; location?: string; avatar?: string }) => {
       const uid = await requireUid();
       const { data, error } = await supabase.from('profiles')
         .update(updates).eq('id', uid).select().single();
