@@ -68,7 +68,7 @@ export const useAuthStore = create<AuthState>()(
           set({
             user: loaded,
             isAuthenticated: true,
-            activeRole: get().activeRole in (loaded.roles ?? []) ? get().activeRole : loaded.roles[0] ?? loaded.role,
+            activeRole: (loaded.roles ?? []).includes(get().activeRole) ? get().activeRole : loaded.roles[0] ?? loaded.role,
           });
         } catch (e) {
           console.error('loadSession:', e);

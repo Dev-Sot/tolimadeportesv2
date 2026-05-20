@@ -158,29 +158,46 @@ export function RegisterPage() {
             </p>
           </div>
 
-          <div className="flex items-center gap-2 mb-8">
-            <div className={`flex-1 h-2 rounded-full ${step >= 1 ? 'bg-primary' : 'bg-secondary'}`} />
-            <div className={`flex-1 h-2 rounded-full ${step >= 2 ? 'bg-primary' : 'bg-secondary'}`} />
+          <div
+            className="flex items-center gap-2 mb-8"
+            role="progressbar"
+            aria-valuenow={step}
+            aria-valuemin={1}
+            aria-valuemax={2}
+            aria-label={`Paso ${step} de 2: ${step === 1 ? 'Selecciona tu tipo de cuenta' : 'Completa tus datos'}`}
+          >
+            <div className={`flex-1 h-2 rounded-full ${step >= 1 ? 'bg-primary' : 'bg-secondary'}`} aria-hidden="true" />
+            <div className={`flex-1 h-2 rounded-full ${step >= 2 ? 'bg-primary' : 'bg-secondary'}`} aria-hidden="true" />
           </div>
 
           {error && (
             <motion.div
+              role="alert"
+              aria-live="assertive"
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-lg flex items-start gap-3"
             >
-              <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
+              <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" aria-hidden="true" />
               <p className="text-sm text-destructive">{error}</p>
             </motion.div>
           )}
 
           {step === 1 ? (
             <div>
-              <div className="grid md:grid-cols-2 gap-4 mb-4">
+              <div
+                className="grid md:grid-cols-2 gap-4 mb-4"
+                role="radiogroup"
+                aria-labelledby="role-selection-label"
+              >
+                <p id="role-selection-label" className="sr-only">Selecciona tu tipo de cuenta</p>
                 {roles.map((roleOption) => (
                   <Card
                     key={roleOption.value}
                     onClick={() => setRole(roleOption.value)}
+                    role="radio"
+                    aria-checked={role === roleOption.value}
+                    aria-label={`${roleOption.label}: ${roleOption.description}`}
                     className={`cursor-pointer transition-all p-4 ${
                       role === roleOption.value
                         ? 'border-2 border-primary ring-2 ring-primary/20'
@@ -188,11 +205,11 @@ export function RegisterPage() {
                     }`}
                   >
                     <div className="flex items-start justify-between mb-3">
-                      <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${roleOption.color} flex items-center justify-center`}>
+                      <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${roleOption.color} flex items-center justify-center`} aria-hidden="true">
                         <roleOption.icon className="w-6 h-6 text-white" />
                       </div>
                       {role === roleOption.value && (
-                        <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                        <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center" aria-hidden="true">
                           <Check className="w-3 h-3 text-white" />
                         </div>
                       )}
@@ -203,53 +220,71 @@ export function RegisterPage() {
                 ))}
               </div>
               <p className="text-xs text-muted-foreground text-center mb-6">
-                Puedes agregar mas roles desde tu perfil despues de registrarte.
+                Puedes agregar más roles desde tu perfil después de registrarte.
               </p>
               <Button onClick={() => setStep(2)} fullWidth size="lg">
                 Continuar
               </Button>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4" noValidate>
               <Input
+                id="register-name"
+                name="name"
                 type="text"
                 label="Nombre Completo"
                 placeholder="Juan Pérez"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                icon={<UserIcon className="w-5 h-5" />}
+                icon={<UserIcon className="w-5 h-5" aria-hidden="true" />}
                 required
+                autoComplete="name"
               />
               <Input
+                id="register-email"
+                name="email"
                 type="email"
                 label="Correo Electrónico"
                 placeholder="tu@email.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                icon={<Mail className="w-5 h-5" />}
+                icon={<Mail className="w-5 h-5" aria-hidden="true" />}
                 required
+                autoComplete="email"
               />
               <Input
+                id="register-password"
+                name="password"
                 type="password"
                 label="Contraseña"
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                icon={<Lock className="w-5 h-5" />}
+                icon={<Lock className="w-5 h-5" aria-hidden="true" />}
                 required
+                autoComplete="new-password"
               />
               <Input
+                id="register-confirm-password"
+                name="confirmPassword"
                 type="password"
                 label="Confirmar Contraseña"
                 placeholder="••••••••"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                icon={<Lock className="w-5 h-5" />}
+                icon={<Lock className="w-5 h-5" aria-hidden="true" />}
                 required
+                autoComplete="new-password"
               />
               <div className="flex items-start gap-2 text-sm text-muted-foreground">
-                <input type="checkbox" required className="mt-1 rounded border-border" />
-                <span>
+                <input
+                  id="accept-terms"
+                  type="checkbox"
+                  required
+                  aria-required="true"
+                  className="mt-1 rounded border-border focus-visible:ring-2 focus-visible:ring-ring"
+                />
+                <label htmlFor="accept-terms">
                   Acepto los{' '}
                   <Link to="/terms" className="text-primary hover:underline">
                     términos y condiciones
@@ -258,7 +293,7 @@ export function RegisterPage() {
                   <Link to="/privacy" className="text-primary hover:underline">
                     política de privacidad
                   </Link>
-                </span>
+                </label>
               </div>
               <div className="flex gap-3">
                 <Button type="button" variant="outline" onClick={() => setStep(1)} fullWidth>

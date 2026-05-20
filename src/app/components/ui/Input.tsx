@@ -7,21 +7,31 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   icon?: React.ReactNode;
 }
 
-export function Input({ label, error, icon, className, ...props }: InputProps) {
+export function Input({ label, error, icon, className, id, name, ...props }: InputProps) {
+  const inputId = id ?? name;
+  const errorId = error && inputId ? `${inputId}-error` : undefined;
+
   return (
     <div className="w-full">
       {label && (
-        <label className="block text-sm font-medium mb-1.5">
+        <label
+          htmlFor={inputId}
+          className="block text-sm font-medium mb-1.5"
+        >
           {label}
         </label>
       )}
       <div className="relative">
         {icon && (
-          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" aria-hidden="true">
             {icon}
           </div>
         )}
         <input
+          id={inputId}
+          name={name}
+          aria-invalid={error ? 'true' : undefined}
+          aria-describedby={errorId}
           className={cn(
             'w-full px-4 py-2.5 bg-input-background border border-input rounded-lg',
             'text-foreground placeholder:text-muted-foreground',
@@ -36,7 +46,9 @@ export function Input({ label, error, icon, className, ...props }: InputProps) {
         />
       </div>
       {error && (
-        <p className="mt-1.5 text-sm text-destructive">{error}</p>
+        <p id={errorId} role="alert" className="mt-1.5 text-sm text-destructive">
+          {error}
+        </p>
       )}
     </div>
   );

@@ -9,7 +9,7 @@ export function ThemeToggle() {
     <button
       onClick={toggleTheme}
       className="relative p-2 rounded-lg hover:bg-secondary/50 transition-colors"
-      aria-label="Toggle theme"
+      aria-label={theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
     >
       <motion.div
         initial={false}

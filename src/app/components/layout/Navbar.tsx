@@ -26,6 +26,12 @@ export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userOpen, setUserOpen] = useState(false);
   const { user, isAuthenticated, logout, activeRole, setActiveRole } = useAuthStore();
+
+  function handleUserMenuKeyDown(e: React.KeyboardEvent) {
+    if (e.key === 'Escape') {
+      setUserOpen(false);
+    }
+  }
   const itemCount = useCartStore((s) => s.getItemCount());
   const { data: notifications = [] } = useNotifications();
   const unreadCount = isAuthenticated ? notifications.filter((n: any) => !n.read).length : 0;
@@ -118,7 +124,7 @@ export function Navbar() {
                   </Link>
 
                   {/* User menu */}
-                  <div className="relative">
+                  <div className="relative" onKeyDown={handleUserMenuKeyDown}>
                     <button
                       onClick={() => setUserOpen(!userOpen)}
                       aria-expanded={userOpen}
@@ -171,11 +177,13 @@ export function Navbar() {
                                 <p className="text-xs text-muted-foreground flex items-center gap-1 mb-2">
                                   <RefreshCw className="w-3 h-3" aria-hidden="true" /> Cambiar perfil
                                 </p>
-                                <div className="flex flex-wrap gap-1.5">
+                                <div className="flex flex-wrap gap-1.5" role="group" aria-label="Cambiar perfil activo">
                                   {(user.roles ?? [user.role]).map((r) => (
                                     <button
                                       key={r}
                                       onClick={() => setActiveRole(r)}
+                                      aria-pressed={r === activeRole}
+                                      aria-label={`${ROLE_LABELS[r] ?? r}${r === activeRole ? ' (activo)' : ''}`}
                                       className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
                                         r === activeRole
                                           ? 'bg-primary text-primary-foreground'

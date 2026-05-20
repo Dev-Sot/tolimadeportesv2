@@ -658,16 +658,37 @@ export function useCreateOrder() {
   return useMutation({
     mutationFn: async (payload: {
       items: Array<{ product_id: string; quantity: number; unit_price: number }>;
-      total: number; shipping_address: object; payment_method: string;
+      total: number;
+      shipping_address: Record<string, string>;
+      payment_method: string;
+      /** Wompi / PSE reference stored for correlation. Requires DB column:
+       *  ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_reference TEXT; */
+      payment_reference?: string;
     }) => {
       const uid = requireUid();
-      const { data: order, error: oErr } = await supabase.from('orders')
-        .insert({ customer_id: uid, total: payload.total, shipping_address: payload.shipping_address, payment_method: payload.payment_method, status: 'pending' })
-        .select().single();
+
+      const orderInsert: Record<string, unknown> = {
+        customer_id:      uid,
+        total:            payload.total,
+        shipping_address: payload.shipping_address,
+        payment_method:   payload.payment_method,
+        status:           'pending',
+      };
+      if (payload.payment_reference) {
+        orderInsert.payment_reference = payload.payment_reference;
+      }
+
+      const { data: order, error: oErr } = await supabase
+        .from('orders')
+        .insert(orderInsert)
+        .select()
+        .single();
       if (oErr) throw new Error(oErr.message);
+
       const { error: iErr } = await supabase.from('order_items')
-        .insert(payload.items.map(i => ({ ...i, order_id: order.id })));
+        .insert(payload.items.map((i) => ({ ...i, order_id: order.id })));
       if (iErr) throw new Error(iErr.message);
+
       return order;
     },
     onSuccess: async (order, payload) => {
@@ -690,6 +711,34 @@ export function useCreateOrder() {
       }
     },
     onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useUpdateOrder() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: {
+      id: string;
+      status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+      /** Wompi transaction ID for audit trail. Requires DB column:
+       *  ALTER TABLE orders ADD COLUMN IF NOT EXISTS wompi_transaction_id TEXT; */
+      wompi_transaction_id?: string;
+    }) => {
+      const updates: Record<string, unknown> = { status: payload.status };
+      if (payload.wompi_transaction_id) {
+        updates.wompi_transaction_id = payload.wompi_transaction_id;
+      }
+      const { error } = await supabase
+        .from('orders')
+        .update(updates)
+        .eq('id', payload.id);
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['my_orders'] });
+      qc.invalidateQueries({ queryKey: ['vendor_orders'] });
+    },
+    onError: (e: Error) => console.error('updateOrder:', e.message),
   });
 }
 
@@ -717,24 +766,38 @@ export function useVendorOrders() {
 // ─── NOTIFICATIONS ────────────────────────────────────────────────────────────
 export function useNotifications() {
   const qc = useQueryClient();
-  const uid = getUid();
+  // Reactive selector — updates when auth state changes, unlike getState()
+  const uid = useAuthStore((s) => s.user?.id) ?? null;
 
   useEffect(() => {
     if (!uid) return;
+
+    // Unique channel name per effect execution prevents the error:
+    // "cannot add postgres_changes callbacks after subscribe()"
+    //
+    // Root cause: React Strict Mode runs mount→cleanup→re-mount in rapid succession.
+    // supabase.removeChannel() is async, so on the second mount the Supabase client
+    // may return the SAME already-SUBSCRIBED channel object for the same name,
+    // and calling .on() on a SUBSCRIBED channel throws the error.
+    //
+    // Fix: unique name per mount guarantees a fresh channel every time.
+    const channelName = `user-notifications:${uid}:${Date.now()}`;
+
     const channel = supabase
-      .channel(`notifications:${uid}`)
-      .on('postgres_changes', {
-        event: 'INSERT', schema: 'public', table: 'notifications',
-        filter: `user_id=eq.${uid}`,
-      }, () => {
-        qc.invalidateQueries({ queryKey: ['notifications'] });
-      })
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${uid}` },
+        () => qc.invalidateQueries({ queryKey: ['notifications'] })
+      )
       .subscribe();
+
     return () => { supabase.removeChannel(channel); };
   }, [uid, qc]);
 
   return useQuery({
-    queryKey: ['notifications'],
+    queryKey: ['notifications', uid],
+    enabled: !!uid,
     queryFn: async () => {
       if (!uid) return [];
       const { data, error } = await supabase.from('notifications')

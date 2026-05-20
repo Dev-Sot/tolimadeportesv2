@@ -62,9 +62,13 @@ export function ProductCard({ product, viewMode = 'grid' }: Props) {
               )}
             </div>
           </div>
-          <button onClick={handleAddToCart} disabled={inCart || product.stock === 0}
-            className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-white text-xs font-medium transition-all self-center ${inCart ? 'bg-success' : 'bg-primary hover:bg-primary/90'} disabled:cursor-not-allowed`}>
-            {inCart ? 'Agregado' : <ShoppingCart className="w-4 h-4" />}
+          <button
+            onClick={handleAddToCart}
+            disabled={inCart || product.stock === 0}
+            aria-label={inCart ? `${product.name} ya está en el carrito` : `Agregar ${product.name} al carrito`}
+            className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-white text-xs font-medium transition-all self-center ${inCart ? 'bg-success' : 'bg-primary hover:bg-primary/90'} disabled:cursor-not-allowed`}
+          >
+            {inCart ? 'Agregado' : <ShoppingCart aria-hidden="true" className="w-4 h-4" />}
           </button>
         </motion.div>
       </Link>
@@ -91,13 +95,21 @@ export function ProductCard({ product, viewMode = 'grid' }: Props) {
           )}
           {/* Hover actions */}
           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all flex items-end justify-end p-3 gap-2 opacity-0 group-hover:opacity-100">
-            <button onClick={handleFav}
-              className={`p-2 rounded-full transition-all ${isFav ? 'bg-red-500 text-white' : 'bg-white/90 text-gray-700 hover:bg-red-50'}`}>
-              <Heart className={`w-4 h-4 ${isFav ? 'fill-current' : ''}`} />
+            <button
+              onClick={handleFav}
+              aria-label={isFav ? `Quitar ${product.name} de favoritos` : `Guardar ${product.name} en favoritos`}
+              aria-pressed={isFav}
+              className={`p-2 rounded-full transition-all ${isFav ? 'bg-red-500 text-white' : 'bg-white/90 text-gray-700 hover:bg-red-50'}`}
+            >
+              <Heart aria-hidden="true" className={`w-4 h-4 ${isFav ? 'fill-current' : ''}`} />
             </button>
-            <button onClick={handleAddToCart} disabled={inCart || product.stock === 0}
-              className={`p-2 rounded-full text-white transition-all disabled:cursor-not-allowed ${inCart ? 'bg-success' : 'bg-primary hover:bg-primary/90 disabled:opacity-50'}`}>
-              <ShoppingCart className="w-4 h-4" />
+            <button
+              onClick={handleAddToCart}
+              disabled={inCart || product.stock === 0}
+              aria-label={inCart ? `${product.name} ya está en el carrito` : `Agregar ${product.name} al carrito`}
+              className={`p-2 rounded-full text-white transition-all disabled:cursor-not-allowed ${inCart ? 'bg-success' : 'bg-primary hover:bg-primary/90 disabled:opacity-50'}`}
+            >
+              <ShoppingCart aria-hidden="true" className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -120,9 +132,13 @@ export function ProductCard({ product, viewMode = 'grid' }: Props) {
                 <p className="text-xs text-muted-foreground">{product.stock} disponibles</p>
               )}
             </div>
-            <button onClick={handleAddToCart} disabled={inCart || product.stock === 0}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-white text-xs font-medium transition-colors disabled:cursor-not-allowed ${inCart ? 'bg-success' : 'bg-primary hover:bg-primary/90 disabled:opacity-50'}`}>
-              <ShoppingCart className="w-3.5 h-3.5" />
+            <button
+              onClick={handleAddToCart}
+              disabled={inCart || product.stock === 0}
+              aria-label={inCart ? `${product.name} ya está en el carrito` : `Agregar ${product.name} al carrito`}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-white text-xs font-medium transition-colors disabled:cursor-not-allowed ${inCart ? 'bg-success' : 'bg-primary hover:bg-primary/90 disabled:opacity-50'}`}
+            >
+              <ShoppingCart aria-hidden="true" className="w-3.5 h-3.5" />
               {inCart ? 'Agregado' : 'Agregar'}
             </button>
           </div>

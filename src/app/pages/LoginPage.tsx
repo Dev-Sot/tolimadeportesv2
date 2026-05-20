@@ -106,12 +106,14 @@ export function LoginPage() {
 
           {error && (
             <motion.div
+              role="alert"
+              aria-live="assertive"
               initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
               className="p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-sm mb-5"
             >
               <div className="flex items-start gap-2 text-destructive">
-                <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" aria-hidden="true" />
                 <div>
                   <p>{error}</p>
                   {error.includes('confirmar') && (
@@ -124,15 +126,19 @@ export function LoginPage() {
             </motion.div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
             <div>
-              <label className="text-sm font-medium mb-1.5 block">Correo electrónico</label>
+              <label htmlFor="login-email" className="text-sm font-medium mb-1.5 block">
+                Correo electrónico
+              </label>
               <Input
+                id="login-email"
+                name="email"
                 type="email"
                 value={email}
                 placeholder="tu@correo.com"
                 onChange={(e) => setEmail(e.target.value)}
-                icon={<Mail className="w-4 h-4" />}
+                icon={<Mail className="w-4 h-4" aria-hidden="true" />}
                 required
                 autoComplete="email"
               />
@@ -140,10 +146,13 @@ export function LoginPage() {
 
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="text-sm font-medium">Contraseña</label>
+                <label htmlFor="login-password" className="text-sm font-medium">
+                  Contraseña
+                </label>
                 <button
                   type="button"
                   disabled={resetting}
+                  aria-busy={resetting || undefined}
                   className="text-xs text-primary hover:underline disabled:opacity-50"
                   onClick={handleForgotPassword}
                 >
@@ -152,21 +161,26 @@ export function LoginPage() {
               </div>
               <div className="relative">
                 <Input
+                  id="login-password"
+                  name="password"
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   placeholder="••••••••"
                   onChange={(e) => setPassword(e.target.value)}
-                  icon={<Lock className="w-4 h-4" />}
+                  icon={<Lock className="w-4 h-4" aria-hidden="true" />}
                   required
                   autoComplete="current-password"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                   aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                  aria-controls="login-password"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {showPassword
+                    ? <EyeOff className="w-4 h-4" aria-hidden="true" />
+                    : <Eye className="w-4 h-4" aria-hidden="true" />}
                 </button>
               </div>
             </div>

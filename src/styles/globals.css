@@ -6,3 +6,40 @@ img {
   max-width: 100%;
   height: auto;
 }
+
+/* Visually hidden — accesible para lectores de pantalla */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Foco visible reforzado — cumple WCAG 2.4.11 (AA) */
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Elimina el outline por defecto solo cuando focus-visible está disponible */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Respeto a prefers-reduced-motion — WCAG 2.3.3 (AAA) / buena práctica AA */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

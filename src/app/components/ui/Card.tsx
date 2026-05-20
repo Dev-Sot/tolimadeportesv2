@@ -1,25 +1,53 @@
 import { motion } from 'motion/react';
 import { cn } from '../../lib/utils';
-import type { ReactNode } from 'react';
+import type { KeyboardEvent, ReactNode } from 'react';
 
 interface CardProps {
   children: ReactNode;
   className?: string;
   hover?: boolean;
   onClick?: () => void;
+  role?: string;
+  'aria-checked'?: boolean;
+  'aria-selected'?: boolean;
+  'aria-label'?: string;
 }
 
-export function Card({ children, className, hover = false, onClick }: CardProps) {
-  const Component = hover || onClick ? motion.div : 'div';
+export function Card({
+  children,
+  className,
+  hover = false,
+  onClick,
+  role,
+  'aria-checked': ariaChecked,
+  'aria-selected': ariaSelected,
+  'aria-label': ariaLabel,
+}: CardProps) {
+  const isInteractive = hover || !!onClick;
+
+  function handleKeyDown(e: KeyboardEvent<HTMLDivElement>) {
+    if (onClick && (e.key === 'Enter' || e.key === ' ')) {
+      e.preventDefault();
+      onClick();
+    }
+  }
+
+  const Component = isInteractive ? motion.div : 'div';
 
   return (
     <Component
       onClick={onClick}
-      whileHover={hover || onClick ? { y: -4, scale: 1.01 } : undefined}
+      onKeyDown={onClick ? handleKeyDown : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      role={role ?? (onClick ? 'button' : undefined)}
+      aria-checked={ariaChecked}
+      aria-selected={ariaSelected}
+      aria-label={ariaLabel}
+      whileHover={isInteractive ? { y: -4, scale: 1.01 } : undefined}
       transition={{ duration: 0.2 }}
       className={cn(
         'bg-card border border-border rounded-xl p-6 shadow-sm',
-        (hover || onClick) && 'cursor-pointer hover:shadow-md',
+        isInteractive && 'cursor-pointer hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
         className
       )}
     >
