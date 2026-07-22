@@ -5,7 +5,7 @@
 **El sistema operativo del deporte local.**
 Marketplace, reservas de cancha, torneos, entrenadores y comunidad en una sola plataforma.
 
-[![CI](https://github.com/Dev-Sot/canchazo/actions/workflows/ci.yml/badge.svg)](https://github.com/Dev-Sot/canchazo/actions/workflows/ci.yml)
+[![CI](https://github.com/Dev-Sot/tolimadeportesv2/actions/workflows/ci.yml/badge.svg)](https://github.com/Dev-Sot/tolimadeportesv2/actions/workflows/ci.yml)
 ![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
 ![Supabase](https://img.shields.io/badge/Supabase-Postgres-3ECF8E?logo=supabase&logoColor=white)
@@ -124,7 +124,7 @@ supabase/
 
 ```bash
 # 1. Clonar el repositorio
-git clone https://github.com/Dev-Sot/canchazo.git
+git clone https://github.com/Dev-Sot/tolimadeportesv2.git
 cd canchazo
 
 # 2. Instalar dependencias
