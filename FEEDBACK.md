@@ -1,7 +1,92 @@
-# Feedback — Tolima Deportes v2
+# Feedback — Canchazo (antes Tolima Deportes v2)
 
 Registro de decisiones tomadas, bugs resueltos y contexto de cada cambio.
 Actualizar cada sesión de trabajo.
+
+---
+
+## Rebrand y modelo de negocio — Julio 2026
+
+**Decisión:** transformar el proyecto de "Tolima Deportes" (nombre descriptivo,
+atado a una sola región) a **Canchazo** (marca propia, escalable fuera del Tolima).
+Modelo de negocio confirmado por el founder: suscripción Pro para el lado que paga
+(vendedor/cancha/organizador/entrenador) + comisión por transacción, plan Fan
+siempre gratis para el usuario final. Ver el brief de transformación de producto
+para el detalle completo de marca, público objetivo y roadmap v1.0→v3.0.
+
+**Por qué el checkout cambió de arquitectura:** el total se calculaba en el
+navegador y se enviaba tal cual a la orden — cualquiera podía editarlo antes de
+pagar. Se resolvió con una función de Postgres (`create_order_with_items`) que
+recalcula el total desde el precio real, en la misma transacción que valida y
+descuenta stock. Esto también resolvió, como efecto secundario, el problema de
+órdenes huérfanas que antes solo se mitigaba con un rollback desde el cliente.
+
+---
+
+## Monetización v1.5 — Julio 22, 2026
+
+**Decisión:** la comisión se calcula sobre el plan del **vendedor**, no del
+comprador — un comprador Fan nunca paga de más por comprarle a un vendedor sin
+Pro. La comisión queda registrada por línea de pedido (`order_items.commission_rate`
+/ `commission_amount`) desde ahora, aunque el libro de liquidaciones (pagarle
+efectivamente a cada vendedor) es trabajo de v2.0 — por ahora es solo registro.
+
+**Por qué Pro se activa desde el navegador y no un webhook:** construir
+verificación server-side real requiere una Edge Function de Supabase con la
+llave privada de Wompi, que no se puede desplegar ni probar sin acceso a esa
+infraestructura. En vez de simular una verificación falsa, se documentó como
+limitación conocida en AUDIT.md y se usó el mismo modelo de confianza que ya
+tenía el checkout (callback del widget en el navegador). Revisar antes de que
+el volumen de suscripciones Pro sea alto.
+
+**Por qué no hay integración de WhatsApp Business:** requiere una cuenta de
+Meta Business API que el proyecto no tiene. Se decidió no construir un stub que
+aparentara funcionar — queda como pendiente explícito, no como "hecho a medias".
+
+---
+
+## Liquidaciones y verificación — v2.0 parcial, Julio 22, 2026
+
+**Decisión:** de los tres frentes de v2.0 (liquidaciones, verificación,
+brackets de torneos), se construyeron los primeros dos completos y se difirió
+el tercero a propósito. Razón: el motor de brackets tiene lógica de
+emparejamiento no trivial (byes, avance de ganadores) que merece su propio
+pase con tests dedicados — meterlo de prisa junto a dos features grandes ya
+entregadas arriesgaba bugs sutiles de bracket, no un motor a medias visible
+pero roto.
+
+**Por qué las liquidaciones no cubren dueños de cancha:** la comisión por
+línea solo existe en `order_items` (marketplace) desde v1.5. Las reservas de
+cancha no tienen ese mismo tracking — extender el libro de liquidaciones sin
+esa base habría sido construir sobre un dato que no existe.
+
+**Por qué `/admin` no es todavía la "consola multi-tenant" del roadmap
+original:** hoy administra una sola instancia de Canchazo (liquidaciones +
+verificación de entrenadores). Multi-tenant real (marca blanca por ciudad) es
+un cambio de arquitectura de otro orden — sigue en v3.0.
+
+---
+
+## Motor de brackets — Julio 22, 2026
+
+**Decisión:** siembra estándar recursiva (1v8, 4v5, 2v7, 3v6 para 8 cupos) en
+vez de emparejar secuencialmente. Razón: emparejar secuencialmente puede
+juntar dos "byes" (posiciones vacías) en el mismo partido cuando hay más de
+la mitad de cupos vacíos — la siembra estándar lo evita matemáticamente para
+cualquier cantidad de participantes, no solo para casos probados a mano.
+
+**Bug evitado a propósito:** la primera versión mental del algoritmo avanzaba
+automáticamente a un ganador de bye contra un rival aún sin decidir en ronda 2
+("cascada" de avance). Se corrigió antes de escribir el código final: a partir
+de la ronda 2, nunca se avanza solo — hay que esperar a que ambos rivales
+existan. El test `"un bye de primera ronda NO avanza de más en la segunda
+ronda"` en `bracket.test.ts` existe específicamente para no reintroducir esto.
+
+**Por qué la generación del bracket vive en TypeScript y no en SQL:** es una
+función pura, fácil de testear exhaustivamente (11 casos, incluidos n de 2 a
+20). Reimplementarla en PL/pgSQL habría sido más difícil de probar y de
+depurar sin ganar nada — la tabla `tournament_matches` solo necesita persistir
+el resultado, no recalcularlo.
 
 ---
 
@@ -153,12 +238,13 @@ Fix: Drop + reescribir `fn_update_target_rating()` con `COALESCE(NEW, OLD)` corr
 
 ## Pendiente confirmado / Issues abiertos
 
-- [ ] `clearCart()` debe moverse a `onSuccess` en CheckoutPage (actualmente antes de confirmar)
-- [ ] Validar `canvas.getContext('2d')` no es null en ImageUpload
-- [ ] Deshabilitar botón Wompi mientras el widget carga
-- [ ] Manejar cancelación de Wompi con feedback al usuario
-- [ ] Resincronizar form del perfil cuando `user` cambia desde otra pestaña
-- [ ] Simplificar `useCreateProduct` (aún tiene AbortController de 20s)
-- [ ] Filtro de specialty de coaches debe ser server-side (actualmente client-side)
-- [ ] URL de redirect reset de contraseña en Supabase Auth dashboard
-- [ ] Ver AUDIT.md para lista completa de issues pendientes
+- [ ] RPC `create_order_with_items` en Supabase para atomicidad real orders/order_items
+      (mitigado con rollback cliente-side el 21-jul-2026, no es transaccional)
+- [ ] Instalar y configurar ESLint (el script existe, falta el paquete en devDependencies)
+- [ ] Code-splitting del bundle principal (~740 kB) con `import()` dinámico
+- [ ] URL de redirect reset de contraseña en Supabase Auth dashboard (config, no código)
+- [ ] Ver AUDIT.md para lista completa de issues resueltos y pendientes
+
+**Resuelto 21-jul-2026:** todos los demás ítems de esta lista (clearCart, canvas
+context, botón Wompi, feedback de cancelación, resync de perfil, AbortController,
+filtro specialty server-side) — ver AUDIT.md sección "Resuelto — Julio 2026".
