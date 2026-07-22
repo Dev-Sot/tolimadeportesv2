@@ -106,3 +106,27 @@ export function validatePhone(phone: string): boolean {
   const re = /^[0-9]{10}$/;
   return re.test(phone.replace(/\D/g, ''));
 }
+
+/** Descarga un arreglo de objetos como CSV. Escapa comas, comillas y saltos de línea. */
+export function downloadCsv(filename: string, rows: Record<string, string | number>[]): void {
+  if (rows.length === 0) return;
+
+  const headers = Object.keys(rows[0]);
+  const escape = (value: string | number) => {
+    const str = String(value ?? '');
+    return /[",\n]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str;
+  };
+
+  const csv = [
+    headers.join(','),
+    ...rows.map((row) => headers.map((h) => escape(row[h])).join(',')),
+  ].join('\n');
+
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}

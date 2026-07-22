@@ -1,17 +1,18 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { Plus, Package, Edit3, Trash2, X, DollarSign, Layers, ArrowLeft, AlertCircle, ShoppingBag, BarChart2 } from 'lucide-react';
+import { Plus, Package, Edit3, Trash2, X, DollarSign, Layers, ArrowLeft, AlertCircle, ShoppingBag, BarChart2, Wallet } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { ImageUpload } from '../components/shared/ImageUpload';
+import { PlanStatus } from '../components/shared/PlanStatus';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
-import { useMyProducts, useCreateProduct, useUpdateProduct, useDeleteProduct, useVendorOrders } from '../hooks/useSupabase';
-import { formatCurrency, formatRelativeTime } from '../lib/utils';
+import { useMyProducts, useCreateProduct, useUpdateProduct, useDeleteProduct, useVendorOrders, useVendorBalance, useVendorPayouts } from '../hooks/useSupabase';
+import { formatCurrency, formatRelativeTime, formatDate, downloadCsv } from '../lib/utils';
 import { toast } from 'sonner';
 
-type Tab = 'products' | 'orders' | 'stats';
+type Tab = 'products' | 'orders' | 'stats' | 'payouts';
 
 const ORDER_STATUS: Record<string, { label: string; variant: any }> = {
   pending:    { label: 'Pendiente',   variant: 'warning' },
@@ -19,6 +20,11 @@ const ORDER_STATUS: Record<string, { label: string; variant: any }> = {
   shipped:    { label: 'Enviado',     variant: 'info' },
   delivered:  { label: 'Entregado',  variant: 'success' },
   cancelled:  { label: 'Cancelado',  variant: 'destructive' },
+};
+
+const PAYOUT_STATUS: Record<string, { label: string; variant: any }> = {
+  pending: { label: 'Pendiente', variant: 'warning' },
+  paid:    { label: 'Pagada',    variant: 'success' },
 };
 
 const CATEGORIES = ['Fútbol','Tenis','Baloncesto','Gimnasio','Natación','Ciclismo','Running','Volleyball'];
@@ -35,6 +41,8 @@ const EMPTY: ProductForm = {
 export function VendorDashboardPage() {
   const { data: products = [], isLoading } = useMyProducts();
   const { data: vendorOrders = [], isLoading: loadingOrders } = useVendorOrders();
+  const { data: balance } = useVendorBalance();
+  const { data: payouts = [], isLoading: loadingPayouts } = useVendorPayouts();
   const createProduct = useCreateProduct();
   const updateProduct = useUpdateProduct();
   const deleteProduct = useDeleteProduct();
@@ -121,7 +129,10 @@ export function VendorDashboardPage() {
 
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold">Mis Productos</h1>
+            <div className="flex items-center gap-2 mb-1">
+              <h1 className="text-3xl font-bold">Mis Productos</h1>
+              <PlanStatus showCommission />
+            </div>
             <p className="text-muted-foreground mt-1">Gestiona tu inventario en el Marketplace</p>
           </div>
           <Button onClick={openCreate}>
@@ -160,7 +171,7 @@ export function VendorDashboardPage() {
 
         {/* Tabs */}
         <div className="flex gap-1 p-1 bg-secondary/50 rounded-xl mb-6 w-fit">
-          {([['products', 'Productos'], ['orders', 'Pedidos'], ['stats', 'Estadísticas']] as [Tab, string][]).map(([id, label]) => (
+          {([['products', 'Productos'], ['orders', 'Pedidos'], ['stats', 'Estadísticas'], ['payouts', 'Liquidaciones']] as [Tab, string][]).map(([id, label]) => (
             <button key={id} onClick={() => setTab(id)}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab === id ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
               {label}
@@ -449,6 +460,28 @@ export function VendorDashboardPage() {
         {/* ── TAB: STATS ── */}
         {tab === 'stats' && (
           <div className="space-y-6">
+            <div className="flex justify-end">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={vendorOrders.length === 0}
+                onClick={() => downloadCsv(
+                  `pedidos-canchazo-${new Date().toISOString().slice(0, 10)}.csv`,
+                  vendorOrders.map((item: any) => ({
+                    fecha: item.orders?.created_at ?? '',
+                    producto: item.products?.name ?? '',
+                    cantidad: item.quantity,
+                    precio_unitario: item.unit_price,
+                    total_linea: item.unit_price * item.quantity,
+                    comision_pct: item.commission_rate != null ? `${(item.commission_rate * 100).toFixed(0)}%` : '—',
+                    comision_valor: item.commission_amount ?? '—',
+                    estado: item.orders?.status ?? '',
+                  }))
+                )}
+              >
+                <BarChart2 className="w-4 h-4" /> Exportar CSV
+              </Button>
+            </div>
             <Card>
               <CardHeader><CardTitle className="text-sm">Valor de catálogo por categoría</CardTitle></CardHeader>
               <CardContent>
@@ -478,6 +511,70 @@ export function VendorDashboardPage() {
                   <p className="text-xs text-muted-foreground mt-1">{label}</p>
                 </Card>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── TAB: PAYOUTS ── */}
+        {tab === 'payouts' && (
+          <div className="space-y-6">
+            <Card className="p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <Wallet className="w-5 h-5 text-primary" />
+                <h3 className="font-semibold">Saldo pendiente de liquidar</h3>
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <p className="text-2xl font-bold">{formatCurrency(balance?.gross_amount ?? 0)}</p>
+                  <p className="text-xs text-muted-foreground">Ventas brutas</p>
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-muted-foreground">−{formatCurrency(balance?.commission_amount ?? 0)}</p>
+                  <p className="text-xs text-muted-foreground">Comisión Canchazo</p>
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-primary">{formatCurrency(balance?.net_amount ?? 0)}</p>
+                  <p className="text-xs text-muted-foreground">A recibir</p>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground mt-4">
+                Solo cuenta pedidos ya <strong>entregados</strong>. El administrador genera la
+                liquidación periódicamente y transfiere el neto a tu cuenta.
+              </p>
+            </Card>
+
+            <div>
+              <h3 className="font-semibold mb-3">Historial de liquidaciones</h3>
+              {loadingPayouts ? (
+                <div className="space-y-3">{[1, 2].map(i => <div key={i} className="h-16 bg-secondary animate-pulse rounded-xl" />)}</div>
+              ) : payouts.length === 0 ? (
+                <div className="text-center py-12">
+                  <Wallet className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
+                  <p className="text-sm text-muted-foreground">Aún no tienes liquidaciones generadas</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {payouts.map((p: any) => {
+                    const s = PAYOUT_STATUS[p.status] ?? { label: p.status, variant: 'default' };
+                    return (
+                      <Card key={p.id} className="p-4 flex items-center justify-between gap-4 flex-wrap">
+                        <div>
+                          <p className="text-sm font-medium">
+                            {formatDate(p.period_start)} – {formatDate(p.period_end)}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Bruto {formatCurrency(p.gross_amount)} · Comisión {formatCurrency(p.commission_amount)}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <p className="text-lg font-bold text-primary">{formatCurrency(p.net_amount)}</p>
+                          <Badge variant={s.variant} size="sm">{s.label}</Badge>
+                        </div>
+                      </Card>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
         )}

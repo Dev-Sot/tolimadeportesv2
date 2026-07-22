@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { User, Package, Calendar, Trophy, Heart, Bell, Settings, Edit3, Save, X, MapPin, Phone, Mail, ArrowLeft, ShieldCheck } from 'lucide-react';
@@ -52,6 +52,14 @@ export function ProfilePage() {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ name: user?.name ?? '', phone: user?.phone ?? '', location: user?.location ?? '', bio: user?.bio ?? '', avatar: user?.avatar ?? '' });
   const [savingRoles, setSavingRoles] = useState(false);
+
+  // Resincroniza el form si el usuario cambia (login en otra pestaña, refresh
+  // de sesión). No sobrescribe mientras el usuario está editando activamente.
+  useEffect(() => {
+    if (editing) return;
+    setForm({ name: user?.name ?? '', phone: user?.phone ?? '', location: user?.location ?? '', bio: user?.bio ?? '', avatar: user?.avatar ?? '' });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   const { data: stats } = useDashboardStats();
   const { data: orders = [], isLoading: loadingOrders } = useMyOrders();

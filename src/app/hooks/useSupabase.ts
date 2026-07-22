@@ -2,13 +2,21 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from '../stores/authStore';
+import { generateBracket, recordMatchResult, type BracketMatch, type BracketParticipant } from '../lib/bracket';
 import { toast } from 'sonner';
 
 // ─── HELPER: crear notificación ───────────────────────────────────────────────
 async function insertNotification(
   userId: string, type: string, title: string, message: string, link?: string
 ) {
-  await supabase.from('notifications').insert({ user_id: userId, type, title, message, link, read: false });
+  try {
+    const { error } = await supabase
+      .from('notifications')
+      .insert({ user_id: userId, type, title, message, link, read: false });
+    if (error) console.error('[insertNotification]', error.message);
+  } catch (e) {
+    console.error('[insertNotification]', e);
+  }
 }
 
 // Non-reactive read — use only inside queryFn / mutationFn callbacks, NOT in queryKey
@@ -241,12 +249,22 @@ export function useCreateReservation() {
   return useMutation({
     mutationFn: async (payload: {
       court_id: string; date: string; start_time: string;
-      end_time: string; total_price: number; notes?: string;
+      end_time: string; notes?: string;
     }) => {
-      const uid = await requireUid();
-      const { data, error } = await supabase.from('reservations')
-        .insert({ ...payload, customer_id: uid }).select().single();
+      // create_reservation recalcula el precio en servidor (horas × tarifa real
+      // de la cancha) y bloquea la cancha durante la transacción para que dos
+      // reservas simultáneas no se cuelen en el mismo horario. Antes esto se
+      // calculaba en el navegador y la validación de choque era solo visual.
+      const { data, error } = await supabase.rpc('create_reservation', {
+        p_court_id: payload.court_id,
+        p_date: payload.date,
+        p_start_time: payload.start_time,
+        p_end_time: payload.end_time,
+        p_notes: payload.notes ?? null,
+      });
       if (error) throw new Error(error.message);
+
+      const uid = getUid();
       // Notificar al dueño de la cancha
       const { data: court } = await supabase.from('courts')
         .select('owner_id, name').eq('id', payload.court_id).single();
@@ -365,7 +383,7 @@ export function useTournament(id: string) {
     enabled: !!id,
     queryFn: async () => {
       const { data, error } = await supabase.from('tournaments')
-        .select('*, profiles:organizer_id (id, name, avatar), tournament_participants (id, user_id, team_name, status, profiles:user_id (id, name, avatar))')
+        .select('*, profiles:organizer_id (id, name, avatar), tournament_participants (id, user_id, team_name, status, profiles:user_id (id, name, avatar)), tournament_matches (*)')
         .eq('id', id).single();
       if (error) { console.error('tournament:', error.message); return null; }
       return data;
@@ -461,6 +479,92 @@ export function useDeleteTournament() {
   });
 }
 
+// ─── BRACKET DE TORNEO ───────────────────────────────────────────────────────
+// El algoritmo de emparejamiento vive en lib/bracket.ts (función pura, con
+// tests). Estos hooks solo persisten su resultado — nunca reimplementan la
+// lógica de avance en SQL ni en el cliente.
+
+export function useGenerateBracket() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ tournamentId, participants }: {
+      tournamentId: string;
+      participants: BracketParticipant[];
+    }) => {
+      const bracket = generateBracket(participants);
+      if (bracket.length === 0) {
+        throw new Error('Se necesitan al menos 2 participantes inscritos para generar el bracket.');
+      }
+
+      // Idempotente: si ya existía un bracket (ej. se agregó gente y se
+      // regenera antes de que arranque el torneo), se reemplaza por completo.
+      await supabase.from('tournament_matches').delete().eq('tournament_id', tournamentId);
+
+      const rows = bracket.map((m) => ({
+        tournament_id: tournamentId,
+        round: m.round,
+        match_index: m.matchIndex,
+        participant_a_id: m.participantA?.id ?? null,
+        participant_b_id: m.participantB?.id ?? null,
+        winner_id: m.winnerId ?? null,
+      }));
+
+      const { error } = await supabase.from('tournament_matches').insert(rows);
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: (_r, { tournamentId }) => {
+      qc.invalidateQueries({ queryKey: ['tournament', tournamentId] });
+      qc.invalidateQueries({ queryKey: ['my_tournaments'] });
+      toast.success('Bracket generado');
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useRecordMatchResult() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ tournamentId, matches, round, matchIndex, winnerId }: {
+      tournamentId: string;
+      /** Estado actual del bracket, ya convertido a BracketMatch[]. */
+      matches: BracketMatch[];
+      round: number;
+      matchIndex: number;
+      winnerId: string;
+    }) => {
+      const updated = recordMatchResult(matches, round, matchIndex, winnerId);
+
+      // Solo escribimos lo que cambió: el partido decidido y, si el ganador
+      // avanzó, el partido de la siguiente ronda. El resto del árbol no se toca.
+      const decided = updated.find((m) => m.round === round && m.matchIndex === matchIndex)!;
+      const next = updated.find(
+        (m) => m.round === round + 1 && m.matchIndex === Math.floor(matchIndex / 2)
+      );
+
+      const { error: e1 } = await supabase.from('tournament_matches')
+        .update({ winner_id: decided.winnerId })
+        .eq('tournament_id', tournamentId).eq('round', round).eq('match_index', matchIndex);
+      if (e1) throw new Error(e1.message);
+
+      if (next) {
+        const { error: e2 } = await supabase.from('tournament_matches')
+          .update({
+            participant_a_id: next.participantA?.id ?? null,
+            participant_b_id: next.participantB?.id ?? null,
+          })
+          .eq('tournament_id', tournamentId).eq('round', next.round).eq('match_index', next.matchIndex);
+        if (e2) throw new Error(e2.message);
+      }
+    },
+    onSuccess: (_r, { tournamentId }) => {
+      qc.invalidateQueries({ queryKey: ['tournament', tournamentId] });
+      qc.invalidateQueries({ queryKey: ['my_tournaments'] });
+      toast.success('Resultado registrado');
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
 export function useMyTournaments() {
   const uid = useAuthStore((s) => s.user?.id) ?? null;
   return useQuery({
@@ -469,7 +573,8 @@ export function useMyTournaments() {
     queryFn: async () => {
       if (!uid) return [];
       const { data, error } = await supabase.from('tournaments')
-        .select('*').eq('organizer_id', uid).order('created_at', { ascending: false });
+        .select('*, tournament_participants (id, user_id, team_name, status, profiles:user_id (id, name, avatar)), tournament_matches (*)')
+        .eq('organizer_id', uid).order('created_at', { ascending: false });
       if (error) { console.error('my_tournaments:', error.message); return []; }
       return data ?? [];
     },
@@ -485,13 +590,11 @@ export function useCoaches(filters?: { specialty?: string; search?: string }) {
         .select('*, profiles:user_id (id, name, email, avatar, location, bio)')
         .eq('is_active', true);
       if (filters?.search) query = query.ilike('bio', `%${filters.search}%`);
+      if (filters?.specialty) query = query.contains('specialties', [filters.specialty]);
       query = query.order('featured', { ascending: false }).order('rating', { ascending: false });
       const { data, error } = await query;
       if (error) { console.error('coaches:', error.message); return []; }
-      let result = data ?? [];
-      if (filters?.specialty)
-        result = result.filter((c: any) => c.specialties?.includes(filters.specialty));
-      return result;
+      return data ?? [];
     },
     retry: 1,
   });
@@ -662,49 +765,29 @@ export function useCreateOrder() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (payload: {
-      items: Array<{ product_id: string; quantity: number; unit_price: number }>;
+      items: Array<{ product_id: string; quantity: number }>;
+      /** Solo para mostrar en la UI antes de pagar (ej. monto del widget de Wompi).
+       *  El total que se guarda en la orden lo recalcula la función de Postgres
+       *  `create_order_with_items` a partir del precio real — nunca se confía
+       *  en este valor. Ver supabase/sql/002_create_order_with_items.sql */
       total: number;
       shipping_address: Record<string, string>;
       payment_method: string;
-      /** Wompi / PSE reference stored for correlation. Requires DB column:
-       *  ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_reference TEXT; */
       payment_reference?: string;
     }) => {
-      const uid = await requireUid();
+      // create_order_with_items recalcula el total en servidor, valida stock
+      // y descuenta inventario en una sola transacción — reemplaza los dos
+      // inserts separados (orders + order_items) que antes podían dejar una
+      // orden huérfana o confiar en un total manipulable desde el cliente.
+      const { data: order, error } = await supabase.rpc('create_order_with_items', {
+        p_items: payload.items.map((i) => ({ product_id: i.product_id, quantity: i.quantity })),
+        p_shipping_address: payload.shipping_address,
+        p_payment_method: payload.payment_method,
+        p_payment_reference: payload.payment_reference ?? null,
+      });
 
-      const orderInsert: Record<string, unknown> = {
-        customer_id:      uid,
-        total:            payload.total,
-        shipping_address: payload.shipping_address,
-        payment_method:   payload.payment_method,
-        status:           'pending',
-      };
-      if (payload.payment_reference) {
-        orderInsert.payment_reference = payload.payment_reference;
-      }
-
-      // Direct await — PostgrestBuilder is PromiseLike so TypeScript infers types correctly.
-      // Graceful fallback: if payment_reference column doesn't exist yet (SQL migration
-      // §0 pending), retry without it so the order is still created successfully.
-      let { data: order, error: oErr } = await supabase
-        .from('orders')
-        .insert(orderInsert)
-        .select()
-        .single();
-
-      if (oErr?.code === '42703' && payload.payment_reference) {
-        delete orderInsert.payment_reference;
-        const retry = await supabase.from('orders').insert(orderInsert).select().single();
-        order = retry.data;
-        oErr = retry.error;
-      }
-
-      if (oErr) throw new Error(oErr.message);
+      if (error) throw new Error(error.message);
       if (!order) throw new Error('El servidor no devolvió la orden. Intenta de nuevo.');
-
-      const { error: iErr } = await supabase.from('order_items')
-        .insert(payload.items.map((i) => ({ ...i, order_id: order.id })));
-      if (iErr) throw new Error(iErr.message);
 
       return order;
     },
@@ -985,7 +1068,12 @@ export function useToggleFavorite() {
       if (isFav) {
         await supabase.from('favorites').delete().eq('user_id', uid).eq('target_id', targetId);
       } else {
-        await supabase.from('favorites').insert({ user_id: uid, target_id: targetId, target_type: targetType });
+        const { error } = await supabase
+          .from('favorites')
+          .insert({ user_id: uid, target_id: targetId, target_type: targetType });
+        // 23505 = unique_violation — ya estaba marcado como favorito (doble clic
+        // o pestañas duplicadas); no es un error real, se ignora.
+        if (error && error.code !== '23505') throw new Error(error.message);
       }
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['favorites'] }),
@@ -1009,6 +1097,216 @@ export function useUpdateProfile() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['profile'] });
       toast.success('Perfil actualizado');
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+// ─── SUSCRIPCIÓN / PLAN PRO ──────────────────────────────────────────────────
+export function useMySubscription() {
+  const uid = useAuthStore((s) => s.user?.id) ?? null;
+  return useQuery({
+    queryKey: ['subscription', uid],
+    enabled: !!uid,
+    queryFn: async () => {
+      if (!uid) return null;
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', uid)
+        .maybeSingle();
+      if (error) { console.error('subscription:', error.message); return null; }
+      return data;
+    },
+  });
+}
+
+/** true si el plan Pro está activo y no ha vencido. */
+export function useIsPro() {
+  const { data } = useMySubscription();
+  if (!data || data.plan !== 'pro' || data.status !== 'active') return false;
+  if (data.current_period_end && new Date(data.current_period_end) < new Date()) return false;
+  return true;
+}
+
+export function useActivateProPlan() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: { wompi_reference: string }) => {
+      const uid = await requireUid();
+      const periodEnd = new Date();
+      periodEnd.setDate(periodEnd.getDate() + 30);
+
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .upsert(
+          {
+            user_id: uid,
+            plan: 'pro',
+            status: 'active',
+            current_period_end: periodEnd.toISOString(),
+            wompi_reference: payload.wompi_reference,
+          },
+          { onConflict: 'user_id' }
+        )
+        .select()
+        .single();
+
+      if (error) throw new Error(error.message);
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['subscription'] });
+      toast.success('¡Listo! Tu plan Pro está activo por 30 días.');
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+// ─── LIQUIDACIONES (PAYOUTS) ─────────────────────────────────────────────────
+// Alcance: solo vendedores del marketplace, porque son las únicas líneas con
+// comisión registrada (order_items.commission_amount, desde v1.5). Dueños de
+// cancha quedan fuera hasta que las reservas tengan el mismo tracking.
+
+export function useVendorBalance() {
+  const uid = useAuthStore((s) => s.user?.id) ?? null;
+  return useQuery({
+    queryKey: ['vendor_balance', uid],
+    enabled: !!uid,
+    queryFn: async () => {
+      if (!uid) return null;
+      const { data, error } = await supabase.rpc('get_vendor_balance', { p_vendor_id: uid });
+      if (error) { console.error('vendor_balance:', error.message); return null; }
+      return data?.[0] ?? null;
+    },
+  });
+}
+
+export function useVendorPayouts() {
+  const uid = useAuthStore((s) => s.user?.id) ?? null;
+  return useQuery({
+    queryKey: ['vendor_payouts', uid],
+    enabled: !!uid,
+    queryFn: async () => {
+      if (!uid) return [];
+      const { data, error } = await supabase
+        .from('payouts')
+        .select('*')
+        .eq('vendor_id', uid)
+        .order('created_at', { ascending: false });
+      if (error) { console.error('vendor_payouts:', error.message); return []; }
+      return data ?? [];
+    },
+  });
+}
+
+/** Solo para el panel de administración: cada vendedor con su saldo pendiente. */
+export function useVendorsWithBalance() {
+  return useQuery({
+    queryKey: ['admin_vendor_balances'],
+    queryFn: async () => {
+      const { data: vendors, error } = await supabase
+        .from('profiles')
+        .select('id, name, email')
+        .contains('roles', ['vendor']);
+      if (error) { console.error('admin_vendor_balances:', error.message); return []; }
+
+      const withBalance = await Promise.all(
+        (vendors ?? []).map(async (v: any) => {
+          const { data } = await supabase.rpc('get_vendor_balance', { p_vendor_id: v.id });
+          return { ...v, balance: data?.[0] ?? { gross_amount: 0, commission_amount: 0, net_amount: 0, order_count: 0 } };
+        })
+      );
+      return withBalance;
+    },
+  });
+}
+
+/** Solo para el panel de administración: todas las liquidaciones pendientes de pago. */
+export function useAdminPendingPayouts() {
+  return useQuery({
+    queryKey: ['admin_pending_payouts'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('payouts')
+        .select('*, profiles:vendor_id (name, email)')
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false });
+      if (error) { console.error('admin_pending_payouts:', error.message); return []; }
+      return data ?? [];
+    },
+  });
+}
+
+export function useGeneratePayout() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (vendorId: string) => {
+      const { data, error } = await supabase.rpc('generate_payout', { p_vendor_id: vendorId });
+      if (error) throw new Error(error.message);
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin_vendor_balances'] });
+      qc.invalidateQueries({ queryKey: ['admin_pending_payouts'] });
+      qc.invalidateQueries({ queryKey: ['vendor_balance'] });
+      qc.invalidateQueries({ queryKey: ['vendor_payouts'] });
+      toast.success('Liquidación generada');
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useMarkPayoutPaid() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payoutId: string) => {
+      const { data, error } = await supabase.rpc('mark_payout_paid', { p_payout_id: payoutId });
+      if (error) throw new Error(error.message);
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin_vendor_balances'] });
+      qc.invalidateQueries({ queryKey: ['admin_pending_payouts'] });
+      qc.invalidateQueries({ queryKey: ['vendor_payouts'] });
+      toast.success('Liquidación marcada como pagada');
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+// ─── VERIFICACIÓN DE ENTRENADORES ────────────────────────────────────────────
+export function useAdminCoaches() {
+  return useQuery({
+    queryKey: ['admin_coaches'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('coaches')
+        .select('*, profiles:user_id (id, name, email, avatar)')
+        .order('created_at', { ascending: false });
+      if (error) { console.error('admin_coaches:', error.message); return []; }
+      return data ?? [];
+    },
+  });
+}
+
+export function useVerifyCoach() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ coachId, verified }: { coachId: string; verified: boolean }) => {
+      const { data, error } = await supabase
+        .from('coaches')
+        .update({ verified, verified_at: verified ? new Date().toISOString() : null })
+        .eq('id', coachId)
+        .select()
+        .single();
+      if (error) throw new Error(error.message);
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['coaches'] });
+      qc.invalidateQueries({ queryKey: ['admin_coaches'] });
+      toast.success('Estado de verificación actualizado');
     },
     onError: (e: Error) => toast.error(e.message),
   });

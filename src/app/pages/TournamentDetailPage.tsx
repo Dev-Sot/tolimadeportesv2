@@ -5,6 +5,7 @@ import { Trophy, Calendar, MapPin, Users, DollarSign, ChevronLeft, Shield, Clock
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
+import { Bracket } from '../components/shared/Bracket';
 import { useTournament, useJoinTournament } from '../hooks/useSupabase';
 import { toast } from 'sonner';
 import { useAuthStore } from '../stores/authStore';
@@ -140,6 +141,22 @@ export function TournamentDetailPage() {
                       </div>
                     ))}
                   </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Bracket */}
+            {(tournament.tournament_matches ?? []).length > 0 && (
+              <Card>
+                <CardHeader><CardTitle>Bracket</CardTitle></CardHeader>
+                <CardContent>
+                  <Bracket
+                    matches={tournament.tournament_matches}
+                    participants={participants.map((p: any) => ({
+                      id: p.id,
+                      name: p.team_name || p.profiles?.name || 'Participante',
+                    }))}
+                  />
                 </CardContent>
               </Card>
             )}
