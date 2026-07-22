@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import {
@@ -10,6 +10,7 @@ import { Badge } from '../components/ui/Badge';
 import { useCartStore } from '../stores/cartStore';
 import { useAuthStore } from '../stores/authStore';
 import { useCreateOrder } from '../hooks/useSupabase';
+import { useWompiScript, WOMPI_PUBLIC_KEY } from '../hooks/useWompi';
 import { formatCurrency } from '../lib/utils';
 import { toast } from 'sonner';
 
@@ -21,19 +22,11 @@ interface WompiTransaction {
   amount_in_cents: number;
 }
 
-declare global {
-  interface Window {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    WidgetCheckout: any;
-  }
-}
-
-const WOMPI_PUBLIC_KEY = import.meta.env.VITE_WOMPI_PUBLIC_KEY as string;
-
 type Step = 1 | 2 | 3;
 type PaymentMethod = 'wompi' | 'pse' | 'cash';
 
 interface ShippingForm {
+  [key: string]: string;
   fullName: string;
   email: string;
   phone: string;
@@ -95,7 +88,7 @@ export function CheckoutPage() {
 
   const [step, setStep]               = useState<Step>(1);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('wompi');
-  const [wompiReady, setWompiReady]   = useState(false);
+  const wompiReady                    = useWompiScript();
   const [paying, setPaying]           = useState(false);
   const isSubmitting                  = useRef(false);
 
@@ -109,39 +102,18 @@ export function CheckoutPage() {
     zipCode:  '',
   });
 
-  // Stable reference — computed once per checkout session
-  const orderRef = useMemo(
-    () => `TOLIMA-${Date.now()}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`,
-    []
+  // Referencia estable, generada una sola vez por sesión de checkout. Un
+  // inicializador de useState (no useMemo) es la forma correcta de ejecutar
+  // algo impuro (Date.now/Math.random) exactamente una vez por instancia del
+  // componente — useMemo no lo garantiza bajo el compilador de React.
+  const [orderRef] = useState(
+    () => `TOLIMA-${Date.now()}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`
   );
 
   const subtotal     = getTotal();
   const shippingCost = subtotal >= 100_000 ? 0 : 15_000;
   const tax          = Math.round(subtotal * 0.19);
   const total        = subtotal + shippingCost + tax;
-
-  // ── Cargar script Wompi una sola vez ──────────────────────────────────────
-  useEffect(() => {
-    // Si ya está en el DOM (visita previa en la misma sesión)
-    const existing = document.getElementById('wompi-script') as HTMLScriptElement | null;
-    if (existing) {
-      // El script puede haber cargado antes de que este efecto corriera
-      if (window.WidgetCheckout) {
-        setWompiReady(true);
-      } else {
-        existing.addEventListener('load', () => setWompiReady(true), { once: true });
-      }
-      return;
-    }
-
-    const script = document.createElement('script');
-    script.id  = 'wompi-script';
-    script.src = 'https://checkout.wompi.co/widget.js';
-    script.setAttribute('data-render', 'false');
-    script.onload  = () => setWompiReady(true);
-    script.onerror = () => console.warn('Wompi script failed to load');
-    document.head.appendChild(script);
-  }, []);
 
   // ── Flujo principal de pago ───────────────────────────────────────────────
   async function handlePay() {
@@ -153,7 +125,7 @@ export function CheckoutPage() {
       // ── Contra entrega: crear orden directamente ──────────────────────────
       if (paymentMethod === 'cash') {
         await createOrder.mutateAsync({
-          items:            items.map((i) => ({ product_id: i.product.id, quantity: i.quantity, unit_price: i.product.price })),
+          items:            items.map((i) => ({ product_id: i.product.id, quantity: i.quantity })),
           total,
           shipping_address: shipping,
           payment_method:   'cash',
@@ -192,13 +164,16 @@ export function CheckoutPage() {
         },
       }).open(async (result: { transaction: WompiTransaction | null }) => {
         const tx = result?.transaction;
-        if (!tx) return; // usuario cerró el widget sin pagar
+        if (!tx) {
+          toast.info('Pago cancelado. Puedes intentarlo de nuevo cuando quieras.');
+          return; // usuario cerró el widget sin pagar
+        }
 
         if (tx.status === 'APPROVED') {
           setPaying(true);
           try {
             await createOrder.mutateAsync({
-              items:            items.map((i) => ({ product_id: i.product.id, quantity: i.quantity, unit_price: i.product.price })),
+              items:            items.map((i) => ({ product_id: i.product.id, quantity: i.quantity })),
               total,
               shipping_address: shipping,
               payment_method:   paymentMethod,
@@ -422,6 +397,7 @@ export function CheckoutPage() {
                           fullWidth
                           size="lg"
                           loading={paying || createOrder.isPending}
+                          disabled={paymentMethod !== 'cash' && !wompiReady}
                           onClick={handlePay}
                         >
                           {paymentMethod === 'cash'

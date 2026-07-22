@@ -33,6 +33,12 @@ export function Card({
   }
 
   const Component = isInteractive ? motion.div : 'div';
+  // whileHover/transition son props de Framer Motion — solo válidas cuando
+  // Component es motion.div. Pasarlas también al <div> plano hace que React
+  // las trate como atributos HTML desconocidos y las advierta en consola.
+  const motionProps = isInteractive
+    ? { whileHover: { y: -4, scale: 1.01 }, transition: { duration: 0.2 } }
+    : {};
 
   return (
     <Component
@@ -43,8 +49,7 @@ export function Card({
       aria-checked={ariaChecked}
       aria-selected={ariaSelected}
       aria-label={ariaLabel}
-      whileHover={isInteractive ? { y: -4, scale: 1.01 } : undefined}
-      transition={{ duration: 0.2 }}
+      {...motionProps}
       className={cn(
         'bg-card border border-border rounded-xl p-6 shadow-sm',
         isInteractive && 'cursor-pointer hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',

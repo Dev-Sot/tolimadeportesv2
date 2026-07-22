@@ -64,7 +64,6 @@ export function CourtDetailPage() {
       date: selectedDate,
       start_time: selectedStart + ':00',
       end_time: selectedEnd + ':00',
-      total_price: calcTotal(),
     });
     setSelectedStart('');
     setSelectedEnd('');
