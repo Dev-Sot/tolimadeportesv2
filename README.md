@@ -11,6 +11,8 @@ Marketplace, reservas de cancha, torneos, entrenadores y comunidad en una sola p
 ![Supabase](https://img.shields.io/badge/Supabase-Postgres-3ECF8E?logo=supabase&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-informational)
 
+**[Ver demo en vivo →](https://tolimadeportesv2.vercel.app/marketplace)**
+
 </div>
 
 ---
@@ -29,40 +31,38 @@ plataforma paga una suscripción o una comisión por transacción.
 
 ## Características principales
 
-- 🛒 **Marketplace** con carrito, filtros, y checkout multi-método (Wompi,
+- **Marketplace** con carrito, filtros, y checkout multi-método (Wompi,
   PSE, contraentrega) — el total se recalcula en una función de Postgres,
   nunca se confía en lo que envía el navegador
-- 📅 **Reservas de cancha** con calendario en tiempo real; la disponibilidad
+- **Reservas de cancha** con calendario en tiempo real; la disponibilidad
   se valida en servidor dentro de una transacción para que dos personas no
   puedan reservar el mismo horario
-- 🏆 **Torneos** con motor de brackets de eliminación simple propio (siembra
+- **Torneos** con motor de brackets de eliminación simple propio (siembra
   estándar, sin byes enfrentados entre sí, sin avances prematuros) — probado
   con tests unitarios dedicados
-- 🧑‍🏫 **Entrenadores** con perfil, solicitudes de sesión e insignia de
+- **Entrenadores** con perfil, solicitudes de sesión e insignia de
   verificación administrada desde el panel admin
-- 💬 **Comunidad** con publicaciones, imágenes, comentarios y likes
-- 👥 **Roles múltiples por cuenta** — un mismo usuario puede ser cliente,
+- **Comunidad** con publicaciones, imágenes, comentarios y likes
+- **Roles múltiples por cuenta** — un mismo usuario puede ser cliente,
   vendedor y dueño de cancha a la vez, sin cuentas separadas
-- 💳 **Plan Pro** con comisión reducida (3% vs. 8%) y página de precios
-- 💰 **Liquidaciones a vendedores** — libro de pagos con saldo pendiente,
+- **Plan Pro** con comisión reducida (3% vs. 8%) y página de precios
+- **Liquidaciones a vendedores** — libro de pagos con saldo pendiente,
   generación de liquidación y marcado como pagada desde el panel admin
-- 🔔 Notificaciones en tiempo real vía Supabase Realtime
-- 🌗 Modo claro/oscuro, diseño responsive, accesibilidad (roles ARIA, foco
+- Notificaciones en tiempo real vía Supabase Realtime
+- Modo claro/oscuro, diseño responsive, accesibilidad (roles ARIA, foco
   visible, skip-nav)
-- ✅ Tests automatizados (Vitest), lint (ESLint) y CI (GitHub Actions) en cada
+- Tests automatizados (Vitest), lint (ESLint) y CI (GitHub Actions) en cada
   cambio
 
 ## Screenshots
 
-<!-- TODO: agregar capturas reales antes de publicar -->
+| Marketplace | Precios |
+|---|---|
+| ![Marketplace](docs/screenshots/marketplace.png) | ![Precios](docs/screenshots/pricing.png) |
 
-| Marketplace | Checkout | Dashboard de vendedor |
-|---|---|---|
-| _(pendiente)_ | _(pendiente)_ | _(pendiente)_ |
-
-| Reserva de cancha | Bracket de torneo | Panel admin |
-|---|---|---|
-| _(pendiente)_ | _(pendiente)_ | _(pendiente)_ |
+<!-- TODO: checkout, dashboard de vendedor, reserva de cancha, bracket de
+     torneo y panel admin están detrás de login — agregar capturas manuales
+     con una cuenta de prueba. -->
 
 ## Tecnologías utilizadas
 
