@@ -63,14 +63,14 @@ export function LoginPage() {
             <div className="mx-auto mb-6 flex items-center justify-center">
               <img
                 src="/DeportesTolima.png"
-                alt="Tolima Deportes"
+                alt="Canchazo"
                 style={{ height: '120px', width: 'auto' }}
                 className="object-contain"
               />
             </div>
-            <h2 className="text-4xl font-bold mb-3">Tolima Deportes</h2>
+            <h2 className="text-4xl font-bold mb-3">Canchazo</h2>
             <p className="text-white/80 text-lg max-w-xs leading-relaxed">
-              La plataforma deportiva #1 del Tolima. Marketplace, canchas, torneos y comunidad.
+              El sistema operativo del deporte local. Marketplace, canchas, torneos y comunidad.
             </p>
           </motion.div>
         </div>
@@ -97,7 +97,7 @@ export function LoginPage() {
           <div className="flex items-center justify-center lg:hidden mb-8">
             <img
               src="/DeportesTolima.png"
-              alt="Tolima Deportes"
+              alt="Canchazo"
               style={{ height: '60px', width: 'auto' }}
               className="object-contain"
             />

@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { Menu, X, ShoppingCart, User, LogOut, Store, Trophy, Users, MapPin, Bell, LayoutDashboard, ChevronDown, RefreshCw } from 'lucide-react';
+import { Menu, X, ShoppingCart, User, LogOut, Store, Trophy, Users, MapPin, Bell, LayoutDashboard, ChevronDown, RefreshCw, ShieldAlert } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { useNotifications } from '../../hooks/useSupabase';
 import { useCartStore } from '../../stores/cartStore';
 import { ThemeToggle } from '../ui/ThemeToggle';
+import { Logo } from '../shared/Logo';
 import { cn } from '../../lib/utils';
 
 const NAV = [
@@ -49,18 +50,8 @@ export function Navbar() {
           <div className="flex items-center justify-between h-16">
 
             {/* Logo */}
-            <Link
-              to="/marketplace"
-              className="flex items-center gap-2.5 shrink-0"
-              aria-label="Tolima Deportes — Ir al inicio"
-            >
-              <img
-  src="/DeportesTolima.png"
-  alt="Tolima Deportes"
-  className="w-9 h-9 object-contain"
-  aria-hidden="true"
-/>
-              <span className="font-bold text-lg hidden sm:block">Tolima Deportes</span>
+            <Link to="/marketplace" className="shrink-0" aria-label="Canchazo — Ir al inicio">
+              <Logo />
             </Link>
 
             {/* Desktop nav */}
@@ -209,6 +200,9 @@ export function Navbar() {
                             {[
                               { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
                               { to: '/profile',   icon: User,            label: 'Mi Perfil' },
+                              ...((user.roles ?? [user.role]).includes('admin')
+                                ? [{ to: '/admin', icon: ShieldAlert, label: 'Panel admin' }]
+                                : []),
                             ].map(({ to, icon: Icon, label }) => (
                               <Link
                                 key={to}

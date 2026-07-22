@@ -322,7 +322,7 @@ export function LandingPage() {
                 Beneficios
               </Badge>
               <h2 className="text-4xl font-bold mb-6">
-                Por qué elegir Tolima Deportes
+                Por qué elegir Canchazo
               </h2>
               <div className="grid grid-cols-2 gap-4 mb-6">
                 {benefits.map((benefit) => (

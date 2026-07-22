@@ -200,7 +200,7 @@ export function MarketplacePage() {
                   <>
                     <h3 className="text-lg font-semibold mb-2">Aún no hay productos</h3>
                     <p className="text-muted-foreground mb-5 text-sm max-w-xs">
-                      Sé el primero en publicar productos deportivos en Tolima Deportes
+                      Sé el primero en publicar productos deportivos en Canchazo
                     </p>
                     <Link to="/register">
                       <Button>Registrarme como vendedor</Button>

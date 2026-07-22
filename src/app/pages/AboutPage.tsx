@@ -46,9 +46,9 @@ const MILESTONES = [
 
 const STATS = [
   { value: '47', label: 'Municipios del Tolima' },
-  { value: '3', label: 'Desarrolladores' },
-  { value: '12', label: 'Semanas de desarrollo' },
-  { value: '100%', label: 'Open Source' },
+  { value: '5', label: 'Verticales conectadas' },
+  { value: '2', label: 'Lados del mercado' },
+  { value: '2026', label: 'Beta en el Tolima' },
 ];
 
 export function AboutPage() {
@@ -59,12 +59,12 @@ export function AboutPage() {
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-accent/5 to-transparent" />
         <div className="relative max-w-4xl mx-auto px-4 sm:px-6 text-center">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-            <Badge variant="primary" className="mb-4">Universidad de Ibagué · 2026</Badge>
+            <Badge variant="primary" className="mb-4">Fundado en Ibagué, Tolima · 2026</Badge>
             <h1 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
               Digitalizando el deporte del Tolima
             </h1>
             <p className="text-xl text-muted-foreground leading-relaxed max-w-3xl mx-auto">
-              Somos tres estudiantes de Ingeniería de Sistemas que decidimos resolver un problema real: 
+              Somos un equipo de ingenieros que decidimos resolver un problema real:
               las MIPYMES deportivas del Tolima no tienen acceso a tecnología para vender, reservar y conectar con su comunidad.
             </p>
           </motion.div>

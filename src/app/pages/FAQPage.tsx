@@ -4,20 +4,20 @@ import { ChevronDown, Search } from 'lucide-react';
 import { Badge } from '../components/ui/Badge';
 
 const FAQS = [
-  { cat: 'General', q: '¿Qué es Tolima Deportes?', a: 'Tolima Deportes es una plataforma SaaS deportiva que conecta atletas, vendedores, organizadores de torneos, dueños de canchas y entrenadores en el departamento del Tolima, Colombia. Puedes comprar equipamiento, reservar canchas, inscribirte en torneos y unirte a la comunidad deportiva regional.' },
+  { cat: 'General', q: '¿Qué es Canchazo?', a: 'Canchazo es una plataforma SaaS deportiva que conecta atletas, vendedores, organizadores de torneos, dueños de canchas y entrenadores en el departamento del Tolima, Colombia. Puedes comprar equipamiento, reservar canchas, inscribirte en torneos y unirte a la comunidad deportiva regional.' },
   { cat: 'General', q: '¿Es gratuito registrarse?', a: 'Sí. El registro para usuarios es completamente gratuito. Los vendedores y dueños de canchas pagan una pequeña comisión por transacción completada, sin costos mensuales fijos.' },
   { cat: 'General', q: '¿En qué municipios del Tolima opera la plataforma?', a: 'La plataforma está disponible para los 47 municipios del Tolima. Actualmente tenemos mayor concentración en Ibagué, El Espinal, Espinal, Honda, Melgar, Planadas y El Líbano. Estamos expandiéndonos activamente.' },
   { cat: 'Marketplace', q: '¿Cómo compro un producto?', a: 'Navega el Marketplace, agrega productos al carrito, procede al checkout ingresando tu dirección de envío y paga con tarjeta crédito/débito vía Wompi, PSE o contra entrega. Recibirás confirmación por email.' },
   { cat: 'Marketplace', q: '¿Cómo vendo mis productos en la plataforma?', a: 'Regístrate seleccionando el rol "Vendedor". Una vez activo, puedes subir tus productos con fotos, precio, descripción y stock. La Asociación de Productores de Café de Planadas y artesanos de La Chamba ya están registrados.' },
   { cat: 'Marketplace', q: '¿Cuánto tarda el envío?', a: 'El tiempo de entrega varía según el vendedor y tu ubicación. En Ibagué, los envíos locales tardan 1-2 días hábiles. Para municipios del Tolima, 2-4 días hábiles. Los envíos mayores a $100.000 COP son gratuitos.' },
   { cat: 'Pagos', q: '¿Qué métodos de pago aceptan?', a: 'Aceptamos tarjeta crédito/débito (Visa, Mastercard, Amex) vía Wompi, PSE (débito bancario directo a cualquier banco colombiano), y pago contra entrega en efectivo.' },
-  { cat: 'Pagos', q: '¿Es seguro pagar en Tolima Deportes?', a: 'Sí. Los pagos en línea son procesados por Wompi, la plataforma oficial de Bancolombia, con encriptación SSL de grado bancario. Nunca almacenamos datos de tarjetas.' },
+  { cat: 'Pagos', q: '¿Es seguro pagar en Canchazo?', a: 'Sí. Los pagos en línea son procesados por Wompi, la plataforma oficial de Bancolombia, con encriptación SSL de grado bancario. Nunca almacenamos datos de tarjetas.' },
   { cat: 'Canchas', q: '¿Cómo reservo una cancha?', a: 'Ve a la sección Canchas, selecciona el deporte y la cancha de tu interés, elige la fecha y la franja horaria disponible, confirma la reserva y paga en línea. Recibirás un comprobante por email.' },
   { cat: 'Canchas', q: '¿Puedo cancelar una reserva?', a: 'Sí. Puedes cancelar hasta 24 horas antes de la reserva sin cargos. Cancelaciones con menos de 24 horas pueden estar sujetas a una penalidad del 20% según la política del dueño de la cancha.' },
   { cat: 'Torneos', q: '¿Cómo me inscribo en un torneo?', a: 'Ve a Torneos, selecciona el evento de tu interés, revisa los requisitos y haz clic en "Inscribirme". Puedes ingresar el nombre de tu equipo. Si el torneo tiene cuota de inscripción, se paga en línea.' },
   { cat: 'Torneos', q: '¿Puedo organizar mi propio torneo?', a: 'Sí. Regístrate con el rol "Organizador", completa la verificación y podrás crear torneos indicando fechas, cupos, precio de inscripción, sede y premios.' },
   { cat: 'Cuenta', q: '¿Olvidé mi contraseña, qué hago?', a: 'En la pantalla de inicio de sesión, haz clic en "¿Olvidaste tu contraseña?". Ingresa tu email registrado y recibirás un enlace de recuperación en tu correo electrónico.' },
-  { cat: 'Cuenta', q: '¿Puedo tener múltiples roles?', a: 'Actualmente cada cuenta tiene un rol principal. Si eres atleta y también tienes una cancha, te recomendamos crear cuentas separadas. Estamos trabajando en soporte multi-rol para próximas versiones.' },
+  { cat: 'Cuenta', q: '¿Puedo tener múltiples roles?', a: 'Sí. Una misma cuenta puede activar varios roles a la vez (por ejemplo, atleta y dueño de cancha). Actívalos desde tu Perfil y cambia entre ellos en cualquier momento desde el menú de usuario.' },
 ];
 
 const CATS = ['Todos', ...Array.from(new Set(FAQS.map(f => f.cat)))];

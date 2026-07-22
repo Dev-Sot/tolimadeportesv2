@@ -7,8 +7,8 @@ const SECTIONS = [
   { title: '3. Almacenamiento y seguridad', body: 'Sus datos se almacenan en servidores de Supabase (PostgreSQL cifrado) en la región us-east-1. Aplicamos cifrado AES-256 en reposo y TLS 1.3 en tránsito. Los datos de pago son manejados exclusivamente por Wompi/Bancolombia y no los almacenamos.' },
   { title: '4. Cookies', body: 'Usamos cookies esenciales para sesión de usuario y cookies analíticas anónimas para mejorar el servicio. Puede desactivar las cookies en su navegador, aunque esto puede afectar la funcionalidad de la plataforma.' },
   { title: '5. Compartición de datos', body: 'Compartimos datos únicamente con: procesadores de pago (Wompi/Bancolombia), servicios de infraestructura (Supabase, Vercel) y cuando sea requerido por ley. Todos los terceros están sujetos a acuerdos de confidencialidad.' },
-  { title: '6. Sus derechos', body: 'Tiene derecho a acceder, corregir o eliminar sus datos personales. Para ejercer estos derechos, contáctenos en sotelo.dev1@gmail.com. Procesaremos su solicitud en un plazo de 15 días hábiles.' },
-  { title: '7. Contacto', body: 'Responsable del tratamiento: Equipo Tolima Deportes, Universidad de Ibagué, Carrera 22 Calle 67, Ibagué, Tolima, Colombia. Email: sotelo.dev1@gmail.com. Teléfono: +57 320 818 4980.' },
+  { title: '6. Sus derechos', body: 'Tiene derecho a acceder, corregir o eliminar sus datos personales. Para ejercer estos derechos, contáctenos en hola@canchazo.co. Procesaremos su solicitud en un plazo de 15 días hábiles.' },
+  { title: '7. Contacto', body: 'Responsable del tratamiento: Canchazo, Ibagué, Tolima, Colombia. Email: hola@canchazo.co.' },
 ];
 
 export function PrivacyPage() {

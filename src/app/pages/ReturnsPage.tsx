@@ -38,7 +38,7 @@ export function ReturnsPage() {
             {[
               'El producto debe estar sin usar y en su empaque original',
               'Debe incluir todos los accesorios y documentos originales',
-              'El pedido debe haber sido realizado a través de Tolima Deportes',
+              'El pedido debe haber sido realizado a través de Canchazo',
               'La solicitud debe realizarse dentro del plazo establecido',
               'Los artículos de higiene personal no son elegibles para devolución',
             ].map((item, i) => (
@@ -83,7 +83,7 @@ export function ReturnsPage() {
             ))}
           </ol>
           <p className="text-xs text-muted-foreground mt-4 pt-4 border-t border-border">
-            ¿Necesitas ayuda? Contáctanos: sotelo.dev1@gmail.com · +57 320 818 4980
+            ¿Necesitas ayuda? Contáctanos: hola@canchazo.co
           </p>
         </section>
       </div>

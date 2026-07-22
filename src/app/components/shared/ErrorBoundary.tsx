@@ -14,7 +14,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: any) {
-    console.error('[Tolima Deportes] Error capturado:', error, info);
+    console.error('[Canchazo] Error capturado:', error, info);
   }
 
   render() {
@@ -32,7 +32,7 @@ export class ErrorBoundary extends Component<Props, State> {
               margin: '0 auto 1.5rem', fontSize: 28
             }}>🏆</div>
             <h1 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '0.5rem', color: '#0f172a' }}>
-              Tolima Deportes
+              Canchazo
             </h1>
             <p style={{ color: '#64748b', marginBottom: '1.5rem', lineHeight: 1.6 }}>
               Ocurrió un error inesperado. Por favor recarga la página.
