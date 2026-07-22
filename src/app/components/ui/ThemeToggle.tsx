@@ -16,10 +16,13 @@ export function ThemeToggle() {
         animate={{ rotate: theme === 'dark' ? 180 : 0 }}
         transition={{ duration: 0.3 }}
       >
+        {/* El ícono muestra el destino del clic (coherente con el aria-label),
+            no el tema actual: en modo oscuro se ofrece el sol, en modo claro
+            se ofrece la luna. */}
         {theme === 'dark' ? (
-          <Moon className="w-5 h-5" />
-        ) : (
           <Sun className="w-5 h-5" />
+        ) : (
+          <Moon className="w-5 h-5" />
         )}
       </motion.div>
     </button>
