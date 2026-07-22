@@ -1,39 +1,54 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useEffect } from 'react';
+import { useEffect, lazy, Suspense, type ReactNode } from 'react';
 import { Toaster } from 'sonner';
 import { Navbar } from './components/layout/Navbar';
 import { Footer } from './components/layout/Footer';
-import { MarketplacePage } from './pages/MarketplacePage';
-import { ProductDetailPage } from './pages/ProductDetailPage';
-import { CartPage } from './pages/CartPage';
-import { CheckoutPage } from './pages/CheckoutPage';
-import { CourtsPage } from './pages/CourtsPage';
-import { CourtDetailPage } from './pages/CourtDetailPage';
-import { TournamentsPage } from './pages/TournamentsPage';
-import { TournamentDetailPage } from './pages/TournamentDetailPage';
-import { CoachesPage } from './pages/CoachesPage';
-import { CoachDetailPage } from './pages/CoachDetailPage';
-import { CommunityPage } from './pages/CommunityPage';
-import { DashboardPage } from './pages/DashboardPage';
-import { ProfilePage } from './pages/ProfilePage';
-import { NotificationsPage } from './pages/NotificationsPage';
-import { VendorDashboardPage } from './pages/VendorDashboardPage';
-import { OrganizerDashboardPage } from './pages/OrganizerDashboardPage';
-import { CourtOwnerDashboardPage } from './pages/CourtOwnerDashboardPage';
-import { CoachDashboardPage } from './pages/CoachDashboardPage';
-import { LoginPage } from './pages/LoginPage';
-import { RegisterPage } from './pages/RegisterPage';
-import { AboutPage } from './pages/AboutPage';
-import { ContactPage } from './pages/ContactPage';
-import { FAQPage } from './pages/FAQPage';
-import { BlogPage } from './pages/BlogPage';
-import { TermsPage } from './pages/TermsPage';
-import { PrivacyPage } from './pages/PrivacyPage';
-import { ReturnsPage } from './pages/ReturnsPage';
 import { useAuthStore } from './stores/authStore';
-import { type ReactNode } from 'react';
 import { ErrorBoundary } from './components/shared/ErrorBoundary';
+import { isSupabaseConfigured } from './lib/supabase';
+import { SetupScreen } from './components/shared/SetupScreen';
+
+// Cada página en su propio chunk — evita que todo el catálogo de páginas
+// (dashboards de 4 roles, panel admin, páginas legales, etc.) viaje en el
+// bundle inicial cuando la mayoría de una visita solo toca 2 o 3 rutas.
+const MarketplacePage = lazy(() => import('./pages/MarketplacePage').then((m) => ({ default: m.MarketplacePage })));
+const ProductDetailPage = lazy(() => import('./pages/ProductDetailPage').then((m) => ({ default: m.ProductDetailPage })));
+const CartPage = lazy(() => import('./pages/CartPage').then((m) => ({ default: m.CartPage })));
+const CheckoutPage = lazy(() => import('./pages/CheckoutPage').then((m) => ({ default: m.CheckoutPage })));
+const CourtsPage = lazy(() => import('./pages/CourtsPage').then((m) => ({ default: m.CourtsPage })));
+const CourtDetailPage = lazy(() => import('./pages/CourtDetailPage').then((m) => ({ default: m.CourtDetailPage })));
+const TournamentsPage = lazy(() => import('./pages/TournamentsPage').then((m) => ({ default: m.TournamentsPage })));
+const TournamentDetailPage = lazy(() => import('./pages/TournamentDetailPage').then((m) => ({ default: m.TournamentDetailPage })));
+const CoachesPage = lazy(() => import('./pages/CoachesPage').then((m) => ({ default: m.CoachesPage })));
+const CoachDetailPage = lazy(() => import('./pages/CoachDetailPage').then((m) => ({ default: m.CoachDetailPage })));
+const CommunityPage = lazy(() => import('./pages/CommunityPage').then((m) => ({ default: m.CommunityPage })));
+const DashboardPage = lazy(() => import('./pages/DashboardPage').then((m) => ({ default: m.DashboardPage })));
+const ProfilePage = lazy(() => import('./pages/ProfilePage').then((m) => ({ default: m.ProfilePage })));
+const NotificationsPage = lazy(() => import('./pages/NotificationsPage').then((m) => ({ default: m.NotificationsPage })));
+const VendorDashboardPage = lazy(() => import('./pages/VendorDashboardPage').then((m) => ({ default: m.VendorDashboardPage })));
+const OrganizerDashboardPage = lazy(() => import('./pages/OrganizerDashboardPage').then((m) => ({ default: m.OrganizerDashboardPage })));
+const CourtOwnerDashboardPage = lazy(() => import('./pages/CourtOwnerDashboardPage').then((m) => ({ default: m.CourtOwnerDashboardPage })));
+const CoachDashboardPage = lazy(() => import('./pages/CoachDashboardPage').then((m) => ({ default: m.CoachDashboardPage })));
+const LoginPage = lazy(() => import('./pages/LoginPage').then((m) => ({ default: m.LoginPage })));
+const RegisterPage = lazy(() => import('./pages/RegisterPage').then((m) => ({ default: m.RegisterPage })));
+const AboutPage = lazy(() => import('./pages/AboutPage').then((m) => ({ default: m.AboutPage })));
+const ContactPage = lazy(() => import('./pages/ContactPage').then((m) => ({ default: m.ContactPage })));
+const FAQPage = lazy(() => import('./pages/FAQPage').then((m) => ({ default: m.FAQPage })));
+const BlogPage = lazy(() => import('./pages/BlogPage').then((m) => ({ default: m.BlogPage })));
+const TermsPage = lazy(() => import('./pages/TermsPage').then((m) => ({ default: m.TermsPage })));
+const PrivacyPage = lazy(() => import('./pages/PrivacyPage').then((m) => ({ default: m.PrivacyPage })));
+const ReturnsPage = lazy(() => import('./pages/ReturnsPage').then((m) => ({ default: m.ReturnsPage })));
+const PricingPage = lazy(() => import('./pages/PricingPage').then((m) => ({ default: m.PricingPage })));
+const AdminPage = lazy(() => import('./pages/AdminPage').then((m) => ({ default: m.AdminPage })));
+
+function RouteLoader() {
+  return (
+    <div className="min-h-[60vh] flex items-center justify-center">
+      <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" aria-label="Cargando" />
+    </div>
+  );
+}
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -79,6 +94,8 @@ export default function App() {
   const logout = useAuthStore((s) => s.logout);
 
   useEffect(() => {
+    if (!isSupabaseConfigured) return;
+
     // Clear old auth storage key if it exists (migration from old key)
     const oldKey = localStorage.getItem('tolima-auth');
     const newKey = localStorage.getItem('tolima-auth-v2');
@@ -90,11 +107,16 @@ export default function App() {
     loadSession();
   }, [loadSession]);
 
+  if (!isSupabaseConfigured) {
+    return <SetupScreen />;
+  }
+
   return (
     <ErrorBoundary>
       <QueryClientProvider client={qc}>
         <BrowserRouter>
           <ScrollToTop />
+          <Suspense fallback={<RouteLoader />}>
           <Routes>
             {/* Redirect root to marketplace */}
             <Route path="/" element={<Navigate to="/marketplace" replace />} />
@@ -134,8 +156,10 @@ export default function App() {
             <Route path="/organizer"    element={<RoleRoute roles={['organizer','admin']}><Layout><OrganizerDashboardPage /></Layout></RoleRoute>} />
             <Route path="/court-owner"  element={<RoleRoute roles={['court_owner','admin']}><Layout><CourtOwnerDashboardPage /></Layout></RoleRoute>} />
             <Route path="/coach"        element={<RoleRoute roles={['coach','admin']}><Layout><CoachDashboardPage /></Layout></RoleRoute>} />
+            <Route path="/admin"        element={<RoleRoute roles={['admin']}><Layout><AdminPage /></Layout></RoleRoute>} />
 
             {/* Static pages */}
+            <Route path="/pricing" element={<Layout><PricingPage /></Layout>} />
             <Route path="/about"   element={<Layout><AboutPage /></Layout>} />
             <Route path="/contact" element={<Layout><ContactPage /></Layout>} />
             <Route path="/faq"     element={<Layout><FAQPage /></Layout>} />
@@ -152,6 +176,7 @@ export default function App() {
             <Route path="/settings"               element={<Navigate to="/profile" replace />} />
             <Route path="*"                       element={<Navigate to="/marketplace" replace />} />
           </Routes>
+          </Suspense>
         </BrowserRouter>
       </QueryClientProvider>
     </ErrorBoundary>

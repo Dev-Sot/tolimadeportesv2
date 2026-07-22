@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { Search, Star, Award, Clock, DollarSign } from 'lucide-react';
+import { Search, Star, Award, Clock, DollarSign, BadgeCheck } from 'lucide-react';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
@@ -111,12 +111,20 @@ export function CoachesPage() {
                         <h3 className="font-semibold text-lg mb-1 line-clamp-1">
                           {(coach.profiles?.name ?? coach.user?.name ?? "Entrenador")}
                         </h3>
-                        {coach.featured && (
-                          <Badge variant="accent" size="sm" className="mb-2">
-                            <Award className="w-3 h-3 mr-1" />
-                            Destacado
-                          </Badge>
-                        )}
+                        <div className="flex items-center gap-1.5 mb-2 flex-wrap">
+                          {coach.featured && (
+                            <Badge variant="accent" size="sm">
+                              <Award className="w-3 h-3 mr-1" />
+                              Destacado
+                            </Badge>
+                          )}
+                          {coach.verified && (
+                            <Badge variant="success" size="sm">
+                              <BadgeCheck className="w-3 h-3 mr-1" />
+                              Verificado
+                            </Badge>
+                          )}
+                        </div>
                         <div className="flex items-center gap-1">
                           <Star className="w-4 h-4 fill-accent text-accent" />
                           <span className="text-sm font-medium">{coach.rating}</span>

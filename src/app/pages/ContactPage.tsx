@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'motion/react';
-import { Mail, Phone, MapPin, Github, Send, CheckCircle2, MessageCircle, Clock } from 'lucide-react';
+import { Mail, MapPin, Github, Send, CheckCircle2, MessageCircle, Clock } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card, CardContent } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
@@ -88,9 +88,8 @@ export function ContactPage() {
               <h2 className="text-xl font-semibold mb-5">Información de contacto</h2>
               <div className="space-y-4">
                 {[
-                  { icon: MapPin, label: 'Ubicación', value: 'Universidad de Ibagué, Carrera 22 Calle 67, Ibagué, Tolima' },
-                  { icon: Phone, label: 'Teléfono', value: '+57 320 818 4980' },
-                  { icon: Mail, label: 'Email', value: 'sotelo.dev1@gmail.com' },
+                  { icon: MapPin, label: 'Ubicación', value: 'Ibagué, Tolima, Colombia' },
+                  { icon: Mail, label: 'Email', value: 'hola@canchazo.co' },
                   { icon: Clock, label: 'Horario', value: 'Lunes a Viernes, 8:00 am – 6:00 pm' },
                 ].map(({ icon: Icon, label, value }) => (
                   <div key={label} className="flex items-start gap-3">

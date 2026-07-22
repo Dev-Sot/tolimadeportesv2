@@ -164,14 +164,14 @@ export function ProductDetailPage() {
               <div className="flex items-center gap-3 mb-6 p-4 bg-secondary/20 rounded-lg">
                 <img
                   src={((product as any).profiles?.avatar ?? product.vendor?.avatar) ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=vendor`}
-                  alt={((product as any).profiles?.name ?? product.vendor?.name ?? "Vendedor") ?? 'Vendedor'}
+                  alt={(product as any).profiles?.name ?? product.vendor?.name ?? 'Vendedor'}
                   className="w-12 h-12 rounded-full object-cover"
                 />
                 <div>
-                  <p className="font-medium">{((product as any).profiles?.name ?? product.vendor?.name ?? "Vendedor") ?? 'Vendedor'}</p>
+                  <p className="font-medium">{(product as any).profiles?.name ?? product.vendor?.name ?? 'Vendedor'}</p>
                   <div className="flex items-center gap-1 text-sm text-muted-foreground">
                     <Star className="w-4 h-4 fill-accent text-accent" />
-                    <span>{((product as any).profiles?.rating ?? product.vendor?.rating ?? 4.8) ?? 4.8} vendedor confiable</span>
+                    <span>{(product as any).profiles?.rating ?? product.vendor?.rating ?? 4.8} vendedor confiable</span>
                   </div>
                 </div>
               </div>
@@ -239,7 +239,7 @@ export function ProductDetailPage() {
             <div className="flex flex-col sm:flex-row gap-3 mb-8">
               <Button
                 onClick={handleAddToCart}
-                variant={inCart ? 'default' : 'outline'}
+                variant={inCart ? 'secondary' : 'outline'}
                 disabled={product.stock === 0 || inCart}
                 className={`flex-1 gap-2 transition-colors ${inCart ? 'bg-success text-white border-success hover:bg-success' : ''}`}
               >

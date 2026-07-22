@@ -5,6 +5,7 @@ import { ArrowLeft, Save, Star, BookOpen, Award, Bell, User } from 'lucide-react
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
+import { PlanStatus } from '../components/shared/PlanStatus';
 import { useMyCoach, useUpsertCoach, useNotifications, useMarkNotificationRead } from '../hooks/useSupabase';
 import { formatRelativeTime } from '../lib/utils';
 
@@ -91,7 +92,10 @@ export function CoachDashboardPage() {
 
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold">Mi perfil de Entrenador</h1>
+            <div className="flex items-center gap-2 mb-1">
+              <h1 className="text-3xl font-bold">Mi perfil de Entrenador</h1>
+              <PlanStatus />
+            </div>
             <p className="text-muted-foreground mt-1">
               {coach ? 'Actualiza tu información profesional' : 'Completa tu perfil para aparecer en el directorio'}
             </p>

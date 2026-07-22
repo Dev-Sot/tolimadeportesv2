@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, Star, Award, Clock, DollarSign, MapPin, Shield, Phone, Mail, Send } from 'lucide-react';
+import { ChevronLeft, Star, Award, Clock, DollarSign, MapPin, Shield, Phone, Mail, Send, BadgeCheck } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
@@ -65,6 +65,9 @@ export function CoachDetailPage() {
                 <h1 className="text-3xl font-bold">{profile.name}</h1>
                 {coach.featured && (
                   <Badge variant="accent"><Award className="w-3 h-3 mr-1" /> Destacado</Badge>
+                )}
+                {coach.verified && (
+                  <Badge variant="success"><BadgeCheck className="w-3 h-3 mr-1" /> Verificado</Badge>
                 )}
               </div>
               <div className="flex items-center gap-3 mb-3 flex-wrap">

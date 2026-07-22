@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 
 interface ButtonProps {
   children: ReactNode;
-  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'accent' | 'destructive';
+  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'accent' | 'destructive' | 'success' | 'info';
   size?: 'sm' | 'md' | 'lg';
   fullWidth?: boolean;
   disabled?: boolean;
@@ -36,6 +36,8 @@ export function Button({
     ghost: 'text-foreground hover:bg-secondary/50 focus:ring-ring',
     accent: 'bg-accent text-accent-foreground hover:bg-accent/90 focus:ring-accent',
     destructive: 'bg-destructive text-destructive-foreground hover:bg-destructive/90 focus:ring-destructive',
+    success: 'bg-green-600 text-white hover:bg-green-600/90 focus:ring-green-600',
+    info: 'bg-blue-600 text-white hover:bg-blue-600/90 focus:ring-blue-600',
   };
 
   const sizes = {

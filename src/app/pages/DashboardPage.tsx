@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { Package, Calendar, Trophy, Heart, ShoppingBag, MapPin, Star, Bell, TrendingUp, Store, Megaphone, Users } from 'lucide-react';
+import { Package, Calendar, Trophy, Heart, ShoppingBag, MapPin, Star, Bell, Store, Megaphone, Users } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';

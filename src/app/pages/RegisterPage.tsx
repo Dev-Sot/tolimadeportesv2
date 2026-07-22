@@ -110,7 +110,7 @@ export function RegisterPage() {
             <div className="mx-auto mb-6 flex items-center justify-center">
               <img
                 src="/DeportesTolima.png"
-                alt="Tolima Deportes"
+                alt="Canchazo"
                 style={{ height: '120px', width: 'auto' }}
                 className="object-contain"
               />

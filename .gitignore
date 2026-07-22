@@ -6,6 +6,10 @@ node_modules
 # Build
 dist
 dist-ssr
+*.tsbuildinfo
+
+# Test
+coverage
 
 # Environment
 .env

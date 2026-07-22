@@ -1,13 +1,37 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { Plus, Trophy, Edit3, Trash2, Users, X, Calendar, ArrowLeft, DollarSign, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Trophy, Edit3, Trash2, Users, X, Calendar, ArrowLeft, DollarSign, ChevronDown, ChevronUp, Swords } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { Card } from '../components/ui/Card';
-import { useMyTournaments, useCreateTournament, useUpdateTournament, useDeleteTournament } from '../hooks/useSupabase';
+import { PlanStatus } from '../components/shared/PlanStatus';
+import { Bracket } from '../components/shared/Bracket';
+import {
+  useMyTournaments, useCreateTournament, useUpdateTournament, useDeleteTournament,
+  useGenerateBracket, useRecordMatchResult,
+} from '../hooks/useSupabase';
+import type { BracketMatch } from '../lib/bracket';
 import { formatCurrency, formatDate, formatRelativeTime } from '../lib/utils';
 import { toast } from 'sonner';
+
+function participantsOf(t: any) {
+  return (t.tournament_participants ?? []).map((p: any) => ({
+    id: p.id,
+    name: p.team_name || p.profiles?.name || 'Participante',
+  }));
+}
+
+function toBracketMatches(rawMatches: any[], participants: { id: string; name: string }[]): BracketMatch[] {
+  const byId = (id: string | null) => (id ? participants.find((p) => p.id === id) ?? null : null);
+  return rawMatches.map((m) => ({
+    round: m.round,
+    matchIndex: m.match_index,
+    participantA: byId(m.participant_a_id),
+    participantB: byId(m.participant_b_id),
+    winnerId: m.winner_id,
+  }));
+}
 
 const SPORTS = ['Fútbol','Tenis','Baloncesto','Ciclismo','Natación','Running','Volleyball'];
 const EMPTY = { name:'', description:'', sport:'Fútbol', location:'Ibagué, Tolima', start_date:'', end_date:'', registration_deadline:'', max_participants:'', entry_fee:'0', prizes:'', rules:'' };
@@ -24,6 +48,8 @@ export function OrganizerDashboardPage() {
   const createTournament = useCreateTournament();
   const updateTournament = useUpdateTournament();
   const deleteTournament = useDeleteTournament();
+  const generateBracket = useGenerateBracket();
+  const recordResult = useRecordMatchResult();
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(EMPTY);
@@ -73,7 +99,10 @@ export function OrganizerDashboardPage() {
                       <Link to="/dashboard" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors">
             <ArrowLeft className="w-4 h-4" /> Volver
           </Link>
-          <h1 className="text-3xl font-bold">Mis Torneos</h1>
+          <div className="flex items-center gap-2 mb-1">
+              <h1 className="text-3xl font-bold">Mis Torneos</h1>
+              <PlanStatus />
+            </div>
             <p className="text-muted-foreground mt-1">Crea y gestiona torneos deportivos</p>
           </div>
           <Button onClick={openCreate}><Plus className="w-4 h-4" /> Nuevo torneo</Button>
@@ -246,6 +275,47 @@ export function OrganizerDashboardPage() {
                           ))}
                         </div>
                       )}
+
+                      {/* Bracket */}
+                      <div className="mt-5 pt-4 border-t border-border">
+                        <div className="flex items-center justify-between mb-3">
+                          <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                            <Swords className="w-3.5 h-3.5" /> Bracket
+                          </p>
+                          {!t.tournament_matches?.length && (
+                            <Button
+                              size="sm"
+                              disabled={(t.tournament_participants?.length ?? 0) < 2 || generateBracket.isPending}
+                              loading={generateBracket.isPending}
+                              onClick={() => generateBracket.mutate({ tournamentId: t.id, participants: participantsOf(t) })}
+                            >
+                              Generar bracket
+                            </Button>
+                          )}
+                        </div>
+                        {!t.tournament_matches?.length ? (
+                          <p className="text-xs text-muted-foreground text-center py-2">
+                            {(t.tournament_participants?.length ?? 0) < 2
+                              ? 'Necesitas al menos 2 participantes inscritos para generar el bracket.'
+                              : 'Aún no se ha generado el bracket para este torneo.'}
+                          </p>
+                        ) : (
+                          <Bracket
+                            matches={t.tournament_matches}
+                            participants={participantsOf(t)}
+                            loading={recordResult.isPending}
+                            onRecordResult={(round, matchIndex, winnerId) =>
+                              recordResult.mutate({
+                                tournamentId: t.id,
+                                matches: toBracketMatches(t.tournament_matches, participantsOf(t)),
+                                round,
+                                matchIndex,
+                                winnerId,
+                              })
+                            }
+                          />
+                        )}
+                      </div>
                     </div>
                   )}
                 </Card>

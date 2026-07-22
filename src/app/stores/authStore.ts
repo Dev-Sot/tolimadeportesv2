@@ -16,38 +16,64 @@ interface AuthState {
   setActiveRole: (role: UserRole) => void;
 }
 
-function mapProfile(p: any): User {
-  const role = (p.role as UserRole) ?? 'customer';
-  const roles: UserRole[] = Array.isArray(p.roles) && p.roles.length > 0
-    ? p.roles as UserRole[]
-    : [role];
+interface RawUserFields {
+  id: string;
+  email?: string | null;
+  name?: string | null;
+  role: UserRole;
+  roles?: UserRole[];
+  avatar?: string | null;
+  bio?: string | null;
+  phone?: string | null;
+  location?: string | null;
+  createdAt?: string | null;
+}
+
+// Aplica una sola vez los valores por defecto compartidos (avatar dicebear,
+// nombre desde el email, ubicación, fecha de creación). mapProfile y
+// mapAuthUser solo se encargan de extraer los campos de su forma de origen
+// distinta (fila de `profiles` vs. `session.user` de Supabase Auth) — antes
+// cada uno reimplementaba estos mismos defaults por separado.
+function buildUser(fields: RawUserFields): User {
+  const roles = fields.roles && fields.roles.length > 0 ? fields.roles : [fields.role];
   return {
+    id: fields.id,
+    email: fields.email ?? '',
+    name: fields.name ?? fields.email?.split('@')[0] ?? 'Usuario',
+    role: fields.role,
+    roles,
+    avatar: fields.avatar ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=${fields.email}`,
+    bio: fields.bio ?? '',
+    phone: fields.phone ?? '',
+    location: fields.location ?? 'Ibagué, Tolima',
+    createdAt: fields.createdAt ?? new Date().toISOString(),
+  };
+}
+
+function mapProfile(p: any): User {
+  return buildUser({
     id: p.id,
     email: p.email,
-    name: p.name ?? p.email?.split('@')[0] ?? 'Usuario',
-    role,
-    roles,
-    avatar: p.avatar ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.email}`,
-    bio: p.bio ?? '',
-    phone: p.phone ?? '',
-    location: p.location ?? 'Ibagué, Tolima',
-    createdAt: p.created_at ?? new Date().toISOString(),
-  };
+    name: p.name,
+    role: (p.role as UserRole) ?? 'customer',
+    roles: Array.isArray(p.roles) ? (p.roles as UserRole[]) : undefined,
+    avatar: p.avatar,
+    bio: p.bio,
+    phone: p.phone,
+    location: p.location,
+    createdAt: p.created_at,
+  });
 }
 
 function mapAuthUser(u: any): User {
   const meta = u.user_metadata ?? {};
-  const role = (meta.role as UserRole) ?? 'customer';
-  return {
+  return buildUser({
     id: u.id,
-    email: u.email ?? '',
-    name: meta.name ?? meta.full_name ?? u.email?.split('@')[0] ?? 'Usuario',
-    role,
-    roles: [role],
-    avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.email}`,
-    bio: '', phone: '', location: 'Ibagué, Tolima',
-    createdAt: u.created_at ?? new Date().toISOString(),
-  };
+    email: u.email,
+    name: meta.name ?? meta.full_name,
+    role: (meta.role as UserRole) ?? 'customer',
+    createdAt: u.created_at,
+  });
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -174,7 +200,15 @@ supabase.auth.onAuthStateChange(async (event, session) => {
     // re-setting state after a logout (signOut fires SIGNED_OUT, but a
     // concurrent TOKEN_REFRESHED can arrive milliseconds later).
     if (event === 'TOKEN_REFRESHED' && session?.user) {
-      if (!useAuthStore.getState().isAuthenticated) return;
+      const current = useAuthStore.getState();
+      if (!current.isAuthenticated) return;
+      // Un token refresh nunca debería traer un usuario distinto al que ya
+      // teníamos en memoria; si pasa, cerramos sesión por seguridad en vez
+      // de mezclar datos de dos cuentas.
+      if (current.user && session.user.id !== current.user.id) {
+        await useAuthStore.getState().logout();
+        return;
+      }
       const { data: profile } = await supabase
         .from('profiles').select('*').eq('id', session.user.id).maybeSingle();
       useAuthStore.setState({

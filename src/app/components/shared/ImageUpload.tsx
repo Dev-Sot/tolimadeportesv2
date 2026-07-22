@@ -27,7 +27,8 @@ async function getCroppedBlob(imageSrc: string, pixelCrop: CropArea): Promise<Bl
   const canvas = document.createElement('canvas');
   canvas.width  = pixelCrop.width;
   canvas.height = pixelCrop.height;
-  const ctx = canvas.getContext('2d')!;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('No se pudo procesar la imagen en este navegador.');
 
   ctx.drawImage(
     img,

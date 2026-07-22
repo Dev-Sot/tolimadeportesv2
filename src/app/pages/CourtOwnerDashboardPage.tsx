@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { Plus, MapPin, Edit3, Trash2, X, Star, Clock, ArrowLeft, DollarSign, Layers, Calendar, Check, Ban, User } from 'lucide-react';
 import { ImageUpload } from '../components/shared/ImageUpload';
+import { PlanStatus } from '../components/shared/PlanStatus';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
@@ -94,7 +95,10 @@ export function CourtOwnerDashboardPage() {
             <Link to="/dashboard" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors">
               <ArrowLeft className="w-4 h-4" /> Volver
             </Link>
-            <h1 className="text-3xl font-bold">Mis Canchas</h1>
+            <div className="flex items-center gap-2 mb-1">
+              <h1 className="text-3xl font-bold">Mis Canchas</h1>
+              <PlanStatus />
+            </div>
             <p className="text-muted-foreground mt-1">Gestiona tus instalaciones deportivas</p>
           </div>
           <Button onClick={openCreate}><Plus className="w-4 h-4" /> Nueva cancha</Button>
